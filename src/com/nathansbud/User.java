@@ -49,7 +49,7 @@ public class User {
             t[i] = (int)(Math.random()*10);
         }
 
-        return Arrays.toString(t);
+        return Arrays.toString(t).replaceAll("\\[", "").replaceAll("\\]","");
     }
     public String getId() {
         return id;
