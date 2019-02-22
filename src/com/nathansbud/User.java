@@ -7,6 +7,9 @@ public class User {
     private String pwd;
     private String id; //Int - 7
 
+    private double funds;
+
+
     private static final int PASSWORD_MINIMUM = 3;
     private static final int PASSWORD_MAXIMUM = 50;
 
@@ -14,6 +17,8 @@ public class User {
     private static final int USERNAME_MAXIMUM = 20;
 
     private static final String FAIL_CONDITION = "[\\n\\s]";
+
+    public User() {}
 
     public User(String _username, String _pwd) {
         username = _username;
@@ -56,5 +61,12 @@ public class User {
     }
     public void setId(String _id) {
         id = _id;
+    }
+
+    public double getFunds() {
+        return funds;
+    }
+    public void setFunds(double _funds) {
+        funds = _funds;
     }
 }

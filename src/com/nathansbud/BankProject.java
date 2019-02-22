@@ -8,75 +8,59 @@ import java.util.Stack;
 
 public class BankProject {
     private static Scanner sc = new Scanner(System.in);
-    private static File file = new File("data/users.txt");
+
+    private static File folder = new File("users/");
+    private static File[] files = folder.listFiles();
 
     static String[][] menuOptions = {
             {"Quit"},
             {"Login", "Create Account", "Forgot Password"},
             {"owo"}, //Login Options
-            {"BIG MEME"}
-
+            {"BIG MEME"},
+            {"Forget Password"}, //Forget Password
+            {"Deposit Funds", "Remove Funds", "Transfer Funds", "Settings", "Log Out"}
     };
 
     private static boolean isRunning = true;
 
     private static int menuState = 1;
-    private Stack<Integer> menu = new Stack<Integer>();
+    private static Stack<Integer> menuStack = new Stack<Integer>();
+    private static User u = new User();
 
-    private static ArrayList<User> users = new ArrayList<User>();
+    private static final int USERNAME_LOC = 0;
+    private static final int PWD_LOC = 1;
+    private static final int UID_LOC = 2;
+    private static final int EMAIL_LOC = 3;
+    private static final int BALANCE_LOC = 4;
+    private static final int HISTORY_LOC = 5;
 
-
-    private static void populateUsers() {
+    private static User loadUser(String name) {
         try {
-            BufferedReader info = new BufferedReader(new FileReader(file));
+            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + ".txt"));
 
-
-            String st;
-
-            String id = "";
-            String username = "";
-            String password;
-
-            int index = 0;
-            while ((st = info.readLine()) != null) {
-                switch (index) {
-                    case 1:
-                        id = st;
-                        break;
-                    case 2:
-                        username = st;
-                        break;
-                    case 3:
-                        password = st;
-                        users.add(new User(username, password, id));
-                    default:
-                        index = 0;
-                        break;
-                }
-
-                index++;
-            }
+            return new User(b.readLine(), b.readLine()); //User, Password
+            //return new User(b.readLine(), b.readLine(), b.readLine()); //User, Password, UID
+            //return new User(b.readLine(), b.readLine(), b.readLine(), b.readLine()); //User, Password, UID, Email
         } catch(IOException e) {
-            System.out.println("PopulateUser IOExcept");
+            System.out.println("User does not exist!");
+            return new User("NULL", "NULL");
         }
     }
+
     private static void createUser(User u) {
-        createUser:
-        {
-            for (User a : users) {
-                if (a.getUsername().equals(u.getUsername())) {
+        createUser: {
+            for (File f : files) {
+                if (f.getName().substring(0, f.getName().lastIndexOf(".")).equals(u.getUsername())) {
                     System.out.println("Attempted to add invalid user!");
                     break createUser;
                 }
             }
 
             try {
-                users.add(u);
-                PrintWriter au = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
-                au.println("#");
-                au.println(u.getUsername());
-                au.println(u.getPwd());
-                au.close();
+                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(folder + "/" + u.getUsername() + ".txt")));
+                nu.println(u.getUsername());
+                nu.println(u.getPwd());
+                nu.close();
             } catch (IOException e) {
                 System.out.println("CreateUser IOExcept");
             }
@@ -84,8 +68,15 @@ public class BankProject {
     }
 
     private static void menuPrint(int menu) {
+        System.out.println("Menu State: " + menuState);
         for (int i = 0; i < menuOptions[menu].length; i++) {
             System.out.println((i+1) + ". " + menuOptions[menu][i]);
+        }
+    }
+
+    private static void menuPrint(String[] menu) {
+        for (int i = 0; i < menu.length; i++) {
+            System.out.println((i+1)+ ". " + menu[i]);
         }
     }
 
@@ -101,6 +92,10 @@ public class BankProject {
                         if (n > 0 && n <= menuOptions[menuState].length) {
                             arguments[0] = input;
                             passed = true;
+                        } else if(n == -99) {
+                            arguments[0] = input;
+                        } else {
+                            System.out.println("Input must be between 1 " +  "and " + menuOptions[menuState].length);
                         }
                     } catch (NumberFormatException e) { //handle actual exceptions
                         System.out.println("idk yet");
@@ -119,13 +114,13 @@ public class BankProject {
     private static String createUsername(String username) {
         boolean passed = false;
         while(!passed) {
-            if(username.contains("#") || username.contains(" ") || (username.length() < 4) || (username.length() > 25)) {
-                System.out.println("Username cannot contain spaces, #, or be less than <4 and >25 characters");
+            if(username.contains(" ") || (username.length() < 4) || (username.length() > 25) || (username.charAt(0) == '.')) {
+                System.out.println("Username cannot contain spaces, start with a ., or be less than <4 and >25 characters");
                 username = sc.nextLine();
             } else {
                 passed = true;
-                for (User u: users){
-                    if(u.getUsername().equals(username)) {
+                for (File f : files){
+                    if(getFileUser(f).equals(username)) {
                         System.out.println("This username is taken!");
                         passed = false;
                         username = sc.nextLine();
@@ -150,12 +145,12 @@ public class BankProject {
         return pass;
     }
 
+    public static String getFileUser(File f) {
+        return f.getName().substring(0, f.getName().lastIndexOf("."));
+    }
+
 
     public static void main(String[] args) {
-        populateUsers();
-        createUser(new User("Nathansbud", "Squaduporbodup", "0000000"));
-
-
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
         String input[] = new String[1];
@@ -167,11 +162,58 @@ public class BankProject {
                     input = checkInput(sc.nextLine());
                     break;
                 case 2:
-                    menuPrint(menuState);
-                    System.out.println();
-                    input = checkInput(sc.nextLine());
+                    boolean loginUserPassed = false;
+                    boolean passwordPassed = false;
+
+                    String login = "";
+                    String pwd = "";
+
+                    System.out.println("Enter your username: ");
+
+                    while(!loginUserPassed) {
+                        login = sc.nextLine();
+                        for(File f : files) {
+                            if(getFileUser(f).equals(login)) {
+                                loginUserPassed = true;
+                                break;
+                            }
+                        }
+
+                        if(!loginUserPassed) {
+                            System.out.println("This username does not exist! Would you like to create an account?");
+                            menuPrint(new String[]{"Yes", "No"});
+                        }
+                    }
+
+                    System.out.println("Enter your password: ");
+
+                    String passMatch = "";
+                    try {
+                        BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + ".txt"));
+                        for (int i = 0; i < PWD_LOC; i++) {
+                            b.readLine();
+                        } passMatch = b.readLine();
+                        b.close();
+                    } catch(IOException e) {
+                        System.out.println("Username does not exist!");
+                    }
+
+
+                    while(!passwordPassed) {
+                        pwd = sc.nextLine();
+                        if(passMatch.equals(pwd)) {
+                            System.out.println("Successful login!");
+                            passwordPassed = true;
+                        }
+
+                        if(!passwordPassed) {
+                            System.out.println("Username and password do not match!");
+                        }
+                    }
+
+                    u = loadUser(login);
                     break;
-                case 3:
+                case 3: //should be condensed to a function
                     boolean userPassed = false;
                     boolean passPassed = false;
 
@@ -206,6 +248,11 @@ public class BankProject {
                     menuState = 1;
                     input[0] = "-1";
                     break;
+                case 5:
+                    System.out.println("Welcome to " + u.getUsername());
+                    menuPrint(menuState);
+                    input = checkInput(sc.nextLine());
+                    break;
             }
 
 
@@ -232,9 +279,8 @@ public class BankProject {
                     }
                     break;
                 case 2:
+                    menuState = 5;
                     break;
-
-
             }
         }
     }
