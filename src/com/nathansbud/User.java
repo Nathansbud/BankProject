@@ -1,11 +1,9 @@
 package com.nathansbud;
 
-import java.util.Arrays;
-
 public class User {
     private String username;
     private String pwd;
-    private String id; //Int - 7
+    private String uid; //Int - 7
 
     private double funds;
 
@@ -16,19 +14,25 @@ public class User {
     private static final int USERNAME_MINIMUM = 3;
     private static final int USERNAME_MAXIMUM = 20;
 
+    private static final int UID_LENGTH = 7;
+
     private static final String FAIL_CONDITION = "[\\n\\s]";
 
     public User() {}
 
-    public User(String _username, String _pwd) {
+    public User(String _username, String _pwd, double _funds) {
         username = _username;
         pwd = _pwd;
+        uid = generateUID();
+
+        funds = _funds;
     }
 
-    public User(String _username, String _pwd, String _id) {
+    public User(String _username, String _pwd, String _uid, double _funds) {
         username = _username;
         pwd = _pwd;
-        id = _id;
+        uid = _uid;
+        funds = _funds;
     }
 
 
@@ -47,20 +51,20 @@ public class User {
     }
 
 
-    public static String generateId() {
-        int[] t = new int[7];
-        t[0] = (int)(Math.random()*9+1);
-        for(int i = 1; i < t.length; i++) {
-            t[i] = (int)(Math.random()*10);
+    public static String generateUID() {
+        String s = Integer.toString((int)(Math.random()*9+1));
+
+        for(int i = 1; i < UID_LENGTH; i++) {
+            s += (int)(Math.random()*10);
         }
 
-        return Arrays.toString(t).replaceAll("\\[", "").replaceAll("\\]","");
+        return s;
     }
-    public String getId() {
-        return id;
+    public String getUID() {
+        return uid;
     }
-    public void setId(String _id) {
-        id = _id;
+    public void setUID(String _uid) {
+        uid = _uid;
     }
 
     public double getFunds() {

@@ -1,5 +1,6 @@
 .idea/
 *.class
 users/
+lib/
 
 BankProject.iml
