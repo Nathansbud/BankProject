@@ -22,7 +22,7 @@ public class BankProject {
             {"owo"}, //Login Options
             {"BIG MEME"},
             {"Forget Password"}, //Forget Password
-            {"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Settings", "Log Out"}
+            {"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Settings", "Log Out"} //6, 7, 8, 9, 10
     };
 
     private static boolean isRunning = true;
@@ -41,14 +41,14 @@ public class BankProject {
     private static User loadUser(String name) {
         try {
             BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + ".txt"));
-            User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine())); //User, Password, UID
+            User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine()), b.readLine()); //User, Password, UID
             temp.setUserFilepath(folder + "/" + name + ".txt");
             b.close();
             return temp;
             //return new User(b.readLine(), b.readLine(), b.readLine(), b.readLine()); //User, Password, UID, Email
         } catch(IOException e) {
             System.out.println("User does not exist!");
-            return new User("NULL", "NULL", "NULL", 0);
+            return new User("NULL", "NULL", "NULL", 0, "NULL");
         }
     }
 
@@ -85,7 +85,7 @@ public class BankProject {
             boolean uidPassed = true;
             double tempFunds = cu.getFunds();
 
-            int t = 0;
+            int t = 0; //User ID nonsense
             for (File f : files) {
                 if(!f.getName().equals(".DS_Store")) {
                     if (f.getName().substring(0, f.getName().lastIndexOf(".")).equals(cu.getUsername())) {
@@ -104,12 +104,12 @@ public class BankProject {
                         }
                         t++;
                     } catch (IOException e) {
-                        System.out.println("uhhh");
+                        System.out.println("uhhh"); //should never happen?
                     }
                 }
             }
 
-            while(!uidPassed) {
+            while(!uidPassed) { //Generate new UID if collision
                 cu.setUID(User.generateUID());
                 uidPassed = true;
 
@@ -129,6 +129,8 @@ public class BankProject {
                 nu.println(cu.getPwd());
                 nu.println(cu.getUID());
                 nu.println(cu.getFunds());
+                nu.println(cu.getEmail());
+                nu.println("#");
                 nu.close();
 
                 files = folder.listFiles();
@@ -162,18 +164,15 @@ public class BankProject {
                 default:
                     try {
                         int n = Integer.parseInt(input);
-                        if (n > 0 && n <= menuOptions[menuState].length) {
+                        if(n > 0 && n <= menuOptions[menuState].length) {
                             arguments[0] = input;
                             passed = true;
-                        } else if(n == -99) {
-                            arguments[0] = input;
                         } else {
-                            System.out.println("Input must be between 1 " +  "and " + menuOptions[menuState].length);
+                            System.out.println("Input must be one of the above numerical choices!");
                         }
                     } catch (NumberFormatException e) { //handle actual exceptions
-                        System.out.println("idk yet");
+                        System.out.println("Input must be one of the above numerical choices!");
                     }
-
                     if(!passed) {
                         input = sc.nextLine();
                     }
@@ -326,9 +325,9 @@ public class BankProject {
                     }
 
                     System.out.println("User created! Try logging in!");
-                    createUser(new User(username, password, 100));
+                    createUser(new User(username, password, 100, "test@gmail.com"));
                     menuState = 1;
-                    input[0] = "-1";
+                    input[0] = "0";
                     break;
                 }
                 case 4:
@@ -355,20 +354,51 @@ public class BankProject {
                     input = checkInput(sc.nextLine());
                     break;
                 case 6: //Deposit
-                    System.out.println("How much would you like to deposit?");
-                    double deposit;
-                    boolean depositPassed = false;
-                    deposit = moneyCheck(sc.nextLine());
-                    if(deposit == -1) {
+                case 7:
+                    System.out.println("How much would you like to " + ((menuState == 6) ? ("deposit?") : ("withdraw?")));
+                    double amount;
+                    amount = moneyCheck(sc.nextLine());
+                    if(amount == -1) {
                         System.out.println("Returning to user page...");
-                        menuState = 5;
                     } else {
-                        u.depositFunds(deposit);
+                        if(menuState == 6) {
+                            u.depositFunds(amount);
+                        } else u.withdrawFunds(amount);
+                        System.out.println("$" + amount + " has been"+((menuState == 6)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + u.getFunds());
                     }
+                    menuState = 5;
+                    input[0] = "0";
                     break;
-                case 7: //Remove
-                    break;
+                case 9:
+                    System.out.println("Transaction History");
+                    String[] s = u.getHistory();
+                    double ct = 0;
 
+                    for(int i = 0; i < s.length; i++) {
+                        System.out.print((i + 1) + ": ");
+                        double change = Double.parseDouble(s[i].substring(2));
+                        switch (s[i].charAt(0)) {
+                            case 'W':
+                                System.out.print("Withdrew $");
+                                ct -= change;
+                                break;
+                            case 'D':
+                                System.out.print("Deposited $");
+                                ct += change;
+                                break;
+                            case 'T':
+                                System.out.println("Transferred $");
+                                ct -= change;
+                                break;
+                            case 'S':
+                                System.out.println("Changed setting (?)");
+                                break;
+                        }
+                        System.out.println(String.format("%.2f", change) + " - Balance: " + String.format("%.2f", ct));
+                    }
+                    menuState = 5;
+                    input[0] = "0";
+                    break;
             }
 
 
@@ -380,8 +410,7 @@ public class BankProject {
                     break;
                 case 1:
                     switch(input[0]) {
-                        case "-1":
-                            menuState = 1;
+                        case "0":
                             break;
                         case "1": //login
                             menuState = 2;
@@ -405,6 +434,8 @@ public class BankProject {
                     break;
                 case 5:
                     switch(input[0]) {
+                        case "0":
+                            break;
                         case "1":
                             menuState = 6;
                             break;
@@ -418,12 +449,17 @@ public class BankProject {
                             menuState = 9;
                             break;
                         case "5":
+                            menuState = 10;
+                            break;
+                        case "6":
                             System.out.println("Logging out!");
                             menuState = 1;
                             break;
                     }
                     break;
                 case 6:
+                    break;
+                case 9:
                     break;
             }
         }

@@ -2,6 +2,7 @@ package com.nathansbud;
 
 import java.io.*;
 import java.nio.file.*;
+import java.util.ArrayList;
 
 import static com.nathansbud.Constants.*;
 
@@ -9,6 +10,7 @@ public class User {
     private String username;
     private String pwd;
     private String uid; //Int - 7
+    private String email;
 
     private double funds;
 
@@ -20,21 +22,45 @@ public class User {
 
     public User() {}
 
-    public User(String _username, String _pwd, double _funds) {
+    public User(String _username, String _pwd, double _funds, String _email) {
         username = _username;
         pwd = _pwd;
         uid = generateUID();
+        email = _email;
 
         funds = _funds;
     }
 
-    public User(String _username, String _pwd, String _uid, double _funds) {
+    public User(String _username, String _pwd, String _uid, double _funds, String _email) {
         username = _username;
         pwd = _pwd;
         uid = _uid;
         funds = _funds;
+        email = _email;
     }
 
+    public String[] getHistory() {
+        ArrayList<String> history = new ArrayList<>();
+
+        try {
+            BufferedReader b = new BufferedReader(new FileReader(userFilepath));
+            for (int i = 0; i < HISTORY_LOC; i++) {
+                b.readLine();
+            }
+            String line;
+            while((line = b.readLine()) != null) {
+                history.add(line);
+            }
+        } catch(IOException e) {
+            System.out.println("GetHistory Fail");
+        }
+
+        String[] h = new String[history.size()];
+        for (int i = 0; i < h.length; i++) {
+            h[i] = history.get(i);
+        }
+        return h;
+    }
 
     public String getUsername() {
         return username;
@@ -68,12 +94,15 @@ public class User {
     }
 
 
-    public void depositFunds(double deposit) {
-        String actionString = "D:" + deposit;
+    public void rewriteFunds(double amount, int type) {
+        String actionString;
+        if(type == 0) {
+            actionString = "D:" + amount;
+        } else {
+            actionString = "W:" + amount;
+        }
+
         String tempPath = userFilepath.substring(0, userFilepath.lastIndexOf("."))+".tst";
-
-        funds += deposit;
-
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(userFilepath));
@@ -87,36 +116,37 @@ public class User {
                 } else {
                     w.println(line);
                 }
-                
+
                 indexer++;
             } w.println(actionString);
 
             b.close();
             w.close();
-            BufferedReader temp = new BufferedReader(new FileReader(tempPath));
-            BufferedWriter rewrite = new BufferedWriter(new FileWriter(userFilepath));
-            while((line = temp.readLine()) != null) {
-                rewrite.write(line + "\n");
-            }
+            File re = new File(tempPath);
+            File old = new File(userFilepath);
 
-            temp.close();
-            rewrite.close();
-
-            Files.deleteIfExists(Paths.get(tempPath));
+            re.renameTo(old); //Todo: Figure out how to handle this bool?
         } catch(IOException e) {
             System.out.println("crap");
         }
     }
-    public double withdrawFunds(double deposit) {
-        funds -= deposit;
-        return deposit;
+    public void depositFunds(double deposit) {
+        funds += deposit;
+        rewriteFunds(deposit, 0);
     }
+    public double withdrawFunds(double withdraw) {
+        funds -= withdraw;
+        rewriteFunds(withdraw, 1);
+
+        return withdraw;
+    }
+
     public double getFunds() {
         return funds;
     }
     public void setFunds(double _funds) {
         funds = _funds;
-    }
+    } //Warning: Should only be used on account create!
 
     public String getUserFilepath() {
         return userFilepath;
@@ -130,5 +160,12 @@ public class User {
     }
     public void setUserFile(File _userFile) {
         userFile = _userFile;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String _email) {
+        email = _email;
     }
 }
