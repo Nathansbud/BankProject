@@ -94,25 +94,38 @@ public class User {
     }
 
 
-    public void rewriteFunds(double amount, int type) {
+    public void rewriteFunds(double amount, int type, String user) {
         String actionString;
+        String send = user;
+
         if(type == 0) {
             actionString = "D:" + amount;
-        } else {
+        } else if(type == 1) {
             actionString = "W:" + amount;
+        } else if(type == 2) {
+            actionString = "T:" + amount + ":" + user;
+            user = username;
+        } else if(type == 3) {
+            actionString = "R:" + amount + ":" + username;
+        }  else {
+            actionString = "ERROR";
         }
 
-        String tempPath = userFilepath.substring(0, userFilepath.lastIndexOf("."))+".tst";
+
+        String selfPath = "users/" + user + ".txt";
+        String tempPath = "users/" + user + ".tst";
 
         try {
-            BufferedReader b = new BufferedReader(new FileReader(userFilepath));
+            BufferedReader b = new BufferedReader(new FileReader(selfPath));
             PrintWriter w = new PrintWriter(new BufferedWriter(new FileWriter(tempPath)));
 
             String line;
             int indexer = 0;
             while ((line = b.readLine()) != null) {
-                if(indexer == BALANCE_LOC) {
+                if(indexer == BALANCE_LOC && type != 3) {
                     w.println(funds);
+                } else if(type == 3 && indexer == BALANCE_LOC) {
+                    w.println(Double.parseDouble(line)+amount);
                 } else {
                     w.println(line);
                 }
@@ -123,22 +136,34 @@ public class User {
             b.close();
             w.close();
             File re = new File(tempPath);
-            File old = new File(userFilepath);
+            File old = new File(selfPath);
 
             re.renameTo(old); //Todo: Figure out how to handle this bool?
+            if(type == 2) {
+                rewriteFunds(amount, 3, send); //This is good recursion, yes?
+            }
         } catch(IOException e) {
             System.out.println("crap");
         }
-    }
+    } //Todo: Clean up this function, it's kinda spaghetti
     public void depositFunds(double deposit) {
         funds += deposit;
-        rewriteFunds(deposit, 0);
+        rewriteFunds(deposit, 0, username);
     }
     public double withdrawFunds(double withdraw) {
         funds -= withdraw;
-        rewriteFunds(withdraw, 1);
+        rewriteFunds(withdraw, 1, username);
 
         return withdraw;
+    }
+    public void transferFunds(double transfer, String user) {
+        File f = new File("users/" + user + ".txt");
+        if(f.exists()) {
+            funds -= transfer;
+            rewriteFunds(transfer, 2, user);
+        } else {
+            System.out.println("Transfer failed, user does not exist!");
+        }
     }
 
     public double getFunds() {

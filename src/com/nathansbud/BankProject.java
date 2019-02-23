@@ -1,16 +1,12 @@
 package com.nathansbud;
 
-import java.io.*;
-import java.util.Scanner;
-import java.util.Stack;
 import static com.nathansbud.Constants.*;
 
-//Todo: Package manager?
-//import javax.mail.*;
+import java.io.*;
+import java.util.Scanner;
+//import java.util.Stack;
 
-
-
-public class BankProject {
+public class BankProject { //Todo: FIX NEGATIVES!!!!
     private static Scanner sc = new Scanner(System.in);
 
     private static File folder = new File("users/");
@@ -19,7 +15,7 @@ public class BankProject {
     static String[][] menuOptions = {
             {"Quit"},
             {"Login", "Create Account", "Forgot Password", "Quit"},
-            {"owo"}, //Login Options
+            {"Yes", "No"}, //Login Options
             {"BIG MEME"},
             {"Forget Password"}, //Forget Password
             {"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Settings", "Log Out"} //6, 7, 8, 9, 10
@@ -28,15 +24,7 @@ public class BankProject {
     private static boolean isRunning = true;
 
     private static int menuState = 1;
-    private static Stack<Integer> menuStack = new Stack<Integer>();
     private static User u = new User();
-
-    /*ACTION CODES:
-        - Deposit — D:{Double}
-        - Withdrawal — W:{Double}
-        — Transfer — T:{Double}
-        - Settings — S:{String}
-    */
 
     private static User loadUser(String name) {
         try {
@@ -45,7 +33,6 @@ public class BankProject {
             temp.setUserFilepath(folder + "/" + name + ".txt");
             b.close();
             return temp;
-            //return new User(b.readLine(), b.readLine(), b.readLine(), b.readLine()); //User, Password, UID, Email
         } catch(IOException e) {
             System.out.println("User does not exist!");
             return new User("NULL", "NULL", "NULL", 0, "NULL");
@@ -76,9 +63,6 @@ public class BankProject {
         return amount;
     }
 
-    private static void sendEmail() {
-        //Todo: Look into SMTP server? Not sure how to send emails...
-    }
     private static void createUser(User cu) {
         createUser: {
             String uids[] = new String[files.length];
@@ -159,7 +143,6 @@ public class BankProject {
         boolean passed = false;
 
         while(!passed) {
-            //Todo: Clean up this code ffs
             switch (menuState) {
                 default:
                     try {
@@ -186,8 +169,8 @@ public class BankProject {
     private static String createUsername(String username) {
         boolean passed = false;
         while(!passed) {
-            if(username.contains(" ") || (username.length() < 4) || (username.length() > 25) || (username.charAt(0) == '.')) {
-                System.out.println("Username cannot contain spaces, start with a ., or be less than <4 and >25 characters");
+            if(username.contains(" ") || username.contains(":") || username.length() < USERNAME_MINIMUM || (username.length() > USERNAME_MAXIMUM) || (username.charAt(0) == '.')) {
+                System.out.println("Username cannot contain spaces or colons, start with a ., be less than " + USERNAME_MINIMUM + " and greater than " + USERNAME_MAXIMUM);
                 username = sc.nextLine();
             } else {
                 passed = true;
@@ -207,7 +190,7 @@ public class BankProject {
     private static String createPassword(String pass) {
         boolean passed = false;
         while(!passed) {
-            if(pass.length() < 4) {
+            if(pass.length() < PASSWORD_MINIMUM) {
                 System.out.println("Password must be greater than 4 characters");
                 pass = sc.nextLine();
             } else {
@@ -227,8 +210,6 @@ public class BankProject {
         System.out.println("What would you like to do today?");
         String input[] = new String[1];
 
-        //Todo: Transaction history & codes
-
         while(isRunning) {
             switch(menuState) {
                 default:
@@ -239,6 +220,7 @@ public class BankProject {
                     System.exit(0);
                     break;
                 case 2: {
+                    input[0] = "2";
                     boolean loginUserPassed = false;
                     boolean passwordPassed = false;
 
@@ -258,40 +240,51 @@ public class BankProject {
 
                         if (!loginUserPassed) {
                             System.out.println("This username does not exist! Would you like to create an account?");
-                            menuPrint(new String[]{"Yes", "No"});
-                            //Todo: Implement this choice, redirect to user create screen if Y, else retry with another username
+                            menuPrint(menuState);
+                            input = checkInput(sc.nextLine());
+                            if(input[0].equals("1")) {
+                                loginUserPassed = true;
+                            } else {
+                                System.out.println("Enter your username: ");
+                            }
                         }
+
+
                     }
 
-                    System.out.println("Enter your password: ");
+                    if(input[0].equals("1")) {
+                        menuState = 3;
+                        input[0] = "0";
+                    } else {
+                        System.out.println("Enter your password: ");
 
-                    String passMatch = "";
-                    try {
-                        BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + ".txt"));
-                        for (int i = 0; i < PWD_LOC; i++) {
-                            b.readLine();
+                        String passMatch = "";
+                        try {
+                            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + ".txt"));
+                            for (int i = 0; i < PWD_LOC; i++) {
+                                b.readLine();
+                            }
+                            passMatch = b.readLine();
+                            b.close();
+                        } catch (IOException e) {
+                            System.out.println("Username does not exist!");
                         }
-                        passMatch = b.readLine();
-                        b.close();
-                    } catch (IOException e) {
-                        System.out.println("Username does not exist!");
+
+
+                        while (!passwordPassed) {
+                            pwd = sc.nextLine();
+                            if (passMatch.equals(pwd)) {
+                                System.out.println("Successful login!");
+                                passwordPassed = true;
+                            }
+
+                            if (!passwordPassed) {
+                                System.out.println("Username and password do not match!");
+                            }
+
+                            u = loadUser(login);
+                        }
                     }
-
-
-                    while (!passwordPassed) {
-                        pwd = sc.nextLine();
-                        if (passMatch.equals(pwd)) {
-                            System.out.println("Successful login!");
-                            passwordPassed = true;
-                        }
-
-                        if (!passwordPassed) {
-                            System.out.println("Username and password do not match!");
-                        }
-                    }
-
-                    u = loadUser(login);
-
                     break;
                 }
                 case 3: {  //should be condensed to a function
@@ -349,7 +342,7 @@ public class BankProject {
                     break;
                 case 5:
                     System.out.println("Welcome back, " + u.getUsername());
-                    System.out.println("Current Balance: $" + (u.getFunds())); //Todo: prettify this
+                    System.out.println("Current Balance: $" + String.format("%.2f", u.getFunds()));
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
                     break;
@@ -369,32 +362,75 @@ public class BankProject {
                     menuState = 5;
                     input[0] = "0";
                     break;
-                case 9:
-                    System.out.println("Transaction History");
+                case 8:
+                    System.out.println("Who would you like to transfer funds to?");
+                    String transferUser = sc.nextLine();
+                    System.out.println("How much would you like to transfer?");
+                    double transferAmount = moneyCheck(sc.nextLine());
+                    u.transferFunds(transferAmount, transferUser);
+                    sc.nextLine();
+                    break;
+                case 9: //Todo: Clean this up for settings!
+                    System.out.println("Account History");
                     String[] s = u.getHistory();
                     double ct = 0;
 
                     for(int i = 0; i < s.length; i++) {
                         System.out.print((i + 1) + ": ");
-                        double change = Double.parseDouble(s[i].substring(2));
+
+
+                        boolean transferred = false;
+                        boolean received = false;
+                        boolean monetary = false;
+                        double change = 0;
+
+                        if(s[i].charAt(0) != 'S') {
+                            change = Double.parseDouble(s[i].substring(2, (s[i].lastIndexOf(":") > 2) ? (s[i].lastIndexOf(":")) : (s[i].length())));
+                            monetary = true;
+                        }
+                        /*
+                        ACTION CODES:
+                            - Deposited — D:{Amount}
+                            - Withdrew — W:{Amount}
+                            — Transferred — T:{Amount}:{Recipient}
+                            - Received — R:{Amount}:{Sender}
+                            - Settings — S:{String}
+                        */
+
                         switch (s[i].charAt(0)) {
-                            case 'W':
-                                System.out.print("Withdrew $");
-                                ct -= change;
-                                break;
                             case 'D':
                                 System.out.print("Deposited $");
                                 ct += change;
                                 break;
-                            case 'T':
-                                System.out.println("Transferred $");
+                            case 'W':
+                                System.out.print("Withdrew $");
                                 ct -= change;
                                 break;
+                            case 'T':
+                                System.out.print("Transferred $");
+                                ct -= change;
+                                transferred = true;
+                                break;
+                            case 'R':
+                                System.out.print("Received $");
+                                ct += change;
+                                received = true;
+                                break;
                             case 'S':
-                                System.out.println("Changed setting (?)");
+                                System.out.print("Changed Setting: ");
                                 break;
                         }
-                        System.out.println(String.format("%.2f", change) + " - Balance: " + String.format("%.2f", ct));
+                        if(monetary) {
+                            System.out.print(String.format("%.2f", change));
+                            if (transferred) {
+                                System.out.print(" to " + s[i].substring(s[i].lastIndexOf(":") + 1));
+                            } else if (received) {
+                                System.out.print(" from " + s[i].substring(s[i].lastIndexOf(":") + 1));
+                            }
+                            System.out.println(" - Balance: " + String.format("%.2f", ct));
+                        } else {
+                            System.out.println(s[i].substring(2));
+                        }
                     }
                     menuState = 5;
                     input[0] = "0";
