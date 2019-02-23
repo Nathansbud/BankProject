@@ -3,8 +3,11 @@ package com.nathansbud;
 import java.io.*;
 import java.util.Scanner;
 import java.util.Stack;
+import static com.nathansbud.Constants.*;
+
 //Todo: Package manager?
-import javax.mail.*;
+//import javax.mail.*;
+
 
 
 public class BankProject {
@@ -28,13 +31,6 @@ public class BankProject {
     private static Stack<Integer> menuStack = new Stack<Integer>();
     private static User u = new User();
 
-    private static final int USERNAME_LOC = 0;
-    private static final int PWD_LOC = 1;
-    private static final int UID_LOC = 2;
-    private static final int BALANCE_LOC = 3;
-    private static final int EMAIL_LOC = 4;
-    private static final int HISTORY_LOC = 5;
-
     /*ACTION CODES:
         - Deposit — D:{Double}
         - Withdrawal — W:{Double}
@@ -45,9 +41,10 @@ public class BankProject {
     private static User loadUser(String name) {
         try {
             BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + ".txt"));
-
-//            return new User(b.readLine(), b.readLine()); //User, Password
-            return new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine())); //User, Password, UID
+            User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine())); //User, Password, UID
+            temp.setUserFilepath(folder + "/" + name + ".txt");
+            b.close();
+            return temp;
             //return new User(b.readLine(), b.readLine(), b.readLine(), b.readLine()); //User, Password, UID, Email
         } catch(IOException e) {
             System.out.println("User does not exist!");
@@ -55,19 +52,43 @@ public class BankProject {
         }
     }
 
+    private static double moneyCheck(String deposit) {
+        boolean depositPassed = false;
+        double amount = -1;
+        while(!depositPassed) {
+            try {
+                amount = Double.parseDouble(deposit);
+                if(amount > 0) {
+                    depositPassed = true;
+                } else {
+                    System.out.println("Deposit amount must be >0");
+                    deposit = sc.nextLine();
+                }
+            } catch(NumberFormatException e) {
+                if(deposit.toLowerCase().equals("back")) {
+                    depositPassed = true;
+                } else {
+                    System.out.println("Deposit amount must be a number!");
+                    deposit = sc.nextLine();
+                }
+            }
+        }
+        return amount;
+    }
+
     private static void sendEmail() {
         //Todo: Look into SMTP server? Not sure how to send emails...
     }
-
-    private static void createUser(User u) {
+    private static void createUser(User cu) {
         createUser: {
             String uids[] = new String[files.length];
             boolean uidPassed = true;
+            double tempFunds = cu.getFunds();
 
             int t = 0;
             for (File f : files) {
                 if(!f.getName().equals(".DS_Store")) {
-                    if (f.getName().substring(0, f.getName().lastIndexOf(".")).equals(u.getUsername())) {
+                    if (f.getName().substring(0, f.getName().lastIndexOf(".")).equals(cu.getUsername())) {
                         System.out.println("Attempted to add invalid user!");
                         break createUser;
                     }
@@ -78,7 +99,7 @@ public class BankProject {
                         }
                         uids[t] = b.readLine();
 
-                        if (uids[t].equals(u.getUID())) {
+                        if (uids[t].equals(cu.getUID())) {
                             uidPassed = false;
                         }
                         t++;
@@ -89,24 +110,29 @@ public class BankProject {
             }
 
             while(!uidPassed) {
-                u.setUID(User.generateUID());
+                cu.setUID(User.generateUID());
                 uidPassed = true;
 
                 for(String c : uids) {
-                    if(c.equals(u.getUID())) {
+                    if(c.equals(cu.getUID())) {
                        uidPassed = false;
                     }
                 }
             }
 
             try {
-                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(folder + "/" + u.getUsername() + ".txt")));
-                nu.println(u.getUsername());
-                nu.println(u.getPwd());
-                nu.println(u.getUID());
-                nu.println(u.getFunds());
+                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(folder + "/" + cu.getUsername() + ".txt")));
+                cu.setUserFilepath(folder + "/" + cu.getUsername() + ".txt");
+                cu.setFunds(0);
+
+                nu.println(cu.getUsername());
+                nu.println(cu.getPwd());
+                nu.println(cu.getUID());
+                nu.println(cu.getFunds());
                 nu.close();
+
                 files = folder.listFiles();
+                cu.depositFunds(tempFunds);
             } catch (IOException e) {
                 System.out.println("CreateUser IOExcept");
             }
@@ -300,7 +326,7 @@ public class BankProject {
                     }
 
                     System.out.println("User created! Try logging in!");
-                    createUser(new User(username, password, 0));
+                    createUser(new User(username, password, 100));
                     menuState = 1;
                     input[0] = "-1";
                     break;
@@ -330,7 +356,15 @@ public class BankProject {
                     break;
                 case 6: //Deposit
                     System.out.println("How much would you like to deposit?");
-                    double deposit = sc.nextDouble(); //Todo: Depositing omegaLUL
+                    double deposit;
+                    boolean depositPassed = false;
+                    deposit = moneyCheck(sc.nextLine());
+                    if(deposit == -1) {
+                        System.out.println("Returning to user page...");
+                        menuState = 5;
+                    } else {
+                        u.depositFunds(deposit);
+                    }
                     break;
                 case 7: //Remove
                     break;
