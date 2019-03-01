@@ -4,7 +4,9 @@ import static com.nathansbud.Constants.*;
 
 import java.io.*;
 import java.util.Scanner;
-//import java.util.Stack;
+import java.io.File;
+
+//TODO: Rework files (
 
 public class BankProject { //Todo: FIX NEGATIVES!!!!
     private static Scanner sc = new Scanner(System.in);
@@ -28,11 +30,12 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
     private static User loadUser(String name) {
         try {
-            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + ".txt"));
+            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + "/user.txt"));
             User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine()), b.readLine()); //User, Password, UID
-            temp.setUserFilepath(folder + "/" + name + ".txt");
+            temp.setUserFilepath(folder + "/" + name + "/user.txt");
             b.close();
             return temp;
+
         } catch(IOException e) {
             System.out.println("User does not exist!");
             return new User("NULL", "NULL", "NULL", 0, "NULL");
@@ -70,14 +73,16 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
             double tempFunds = cu.getFunds();
 
             int t = 0; //User ID nonsense
+
             for (File f : files) {
                 if(!f.getName().equals(".DS_Store")) {
-                    if (f.getName().substring(0, f.getName().lastIndexOf(".")).equals(cu.getUsername())) {
+                    if (f.getName().equals(cu.getUsername())) {
                         System.out.println("Attempted to add invalid user!");
                         break createUser;
                     }
                     try {
-                        BufferedReader b = new BufferedReader(new FileReader(f));
+                        BufferedReader b = new BufferedReader(new FileReader(f + "/user.txt"));
+
                         for (int i = 0; i < UID_LOC; i++) {
                             b.readLine();
                         }
@@ -88,7 +93,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                         }
                         t++;
                     } catch (IOException e) {
-                        System.out.println("uhhh"); //should never happen?
+                        System.out.println("CreateUser UID LoadException"); //should never happen?
                     }
                 }
             }
@@ -105,8 +110,11 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
             }
 
             try {
-                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(folder + "/" + cu.getUsername() + ".txt")));
-                cu.setUserFilepath(folder + "/" + cu.getUsername() + ".txt");
+                File dir = new File(folder + "/" + cu.getUsername());
+                dir.mkdir();
+
+                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(dir + "/user.txt")));
+                cu.setUserFilepath(dir + "/user.txt");
                 cu.setFunds(0);
 
                 nu.println(cu.getUsername());
@@ -201,7 +209,8 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
     }
 
     public static String getFileUser(File f) {
-        return f.getName().substring(0, f.getName().lastIndexOf("."));
+        return f.getName();
+                //.substring(0, f.getName().lastIndexOf("."));
     }
 
 
@@ -260,7 +269,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
                         String passMatch = "";
                         try {
-                            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + ".txt"));
+                            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + "/user.txt"));
                             for (int i = 0; i < PWD_LOC; i++) {
                                 b.readLine();
                             }
@@ -269,7 +278,6 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                         } catch (IOException e) {
                             System.out.println("Username does not exist!");
                         }
-
 
                         while (!passwordPassed) {
                             pwd = sc.nextLine();
@@ -368,7 +376,8 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     System.out.println("How much would you like to transfer?");
                     double transferAmount = moneyCheck(sc.nextLine());
                     u.transferFunds(transferAmount, transferUser);
-                    sc.nextLine();
+                    menuState = 5;
+                    input[0] = "0";
                     break;
                 case 9: //Todo: Clean this up for settings!
                     System.out.println("Account History");

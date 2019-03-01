@@ -18,8 +18,6 @@ public class User {
     private File userFile;
     private String userFilepath;
 
-    private static final String FAIL_CONDITION = "[\\n\\s]";
-
     public User() {}
 
     public User(String _username, String _pwd, double _funds, String _email) {
@@ -112,8 +110,8 @@ public class User {
         }
 
 
-        String selfPath = "users/" + user + ".txt";
-        String tempPath = "users/" + user + ".tst";
+        String selfPath = "users/" + user + "/user.txt";
+        String tempPath = "users/" + user + "/user.tst";
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(selfPath));
@@ -143,7 +141,7 @@ public class User {
                 rewriteFunds(amount, 3, send); //This is good recursion, yes?
             }
         } catch(IOException e) {
-            System.out.println("crap");
+            System.out.println("Fund Writing Fail");
         }
     } //Todo: Clean up this function, it's kinda spaghetti
     public void depositFunds(double deposit) {
@@ -157,7 +155,7 @@ public class User {
         return withdraw;
     }
     public void transferFunds(double transfer, String user) {
-        File f = new File("users/" + user + ".txt");
+        File f = new File("users/" + user + "/user.txt");
         if(f.exists()) {
             funds -= transfer;
             rewriteFunds(transfer, 2, user);
@@ -192,5 +190,10 @@ public class User {
     }
     public void setEmail(String _email) {
         email = _email;
+    }
+
+    public static void sendMessage(String from, String to, String message) {
+
+
     }
 }

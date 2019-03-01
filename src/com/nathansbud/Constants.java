@@ -3,7 +3,7 @@ package com.nathansbud;
 
 public final class Constants {
     private Constants() {
-        // restrict instantiation
+        //Should never be called
     }
 
     public static final int USERNAME_LOC = 0;
@@ -21,5 +21,4 @@ public final class Constants {
     public static final int USERNAME_MAXIMUM = 25;
 
     public static final int UID_LENGTH = 7;
-
 }
