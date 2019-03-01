@@ -1,7 +1,6 @@
 package com.nathansbud;
 
 import java.io.*;
-import java.nio.file.*;
 import java.util.ArrayList;
 
 import static com.nathansbud.Constants.*;
@@ -13,7 +12,6 @@ public class User {
     private String email;
 
     private double funds;
-
 
     private File userFile;
     private String userFilepath;
@@ -63,6 +61,7 @@ public class User {
     public String getUsername() {
         return username;
     }
+
     public void setUsername(String _username) {
         username = _username;
     }
@@ -170,13 +169,14 @@ public class User {
     public void setFunds(double _funds) {
         funds = _funds;
     } //Warning: Should only be used on account create!
-
+    
     public String getUserFilepath() {
         return userFilepath;
     }
     public void setUserFilepath(String _userFilepath) {
         userFilepath = _userFilepath;
     }
+
 
     public File getUserFile() {
         return userFile;
@@ -193,7 +193,6 @@ public class User {
     }
 
     public static void sendMessage(String from, String to, String message) {
-
 
     }
 }

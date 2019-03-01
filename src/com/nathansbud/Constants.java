@@ -14,7 +14,7 @@ public final class Constants {
     public static final int DELIMETER_LOC = 5;
     public static final int HISTORY_LOC = 6;
 
-    public static final int PASSWORD_MINIMUM = 4;
+    public static final int PASSWORD_MINIMUM = 3;
     public static final int PASSWORD_MAXIMUM = 50;
 
     public static final int USERNAME_MINIMUM = 3;

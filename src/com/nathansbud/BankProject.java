@@ -3,10 +3,12 @@ package com.nathansbud;
 import static com.nathansbud.Constants.*;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.io.File;
+import java.util.Map;
 
-//TODO: Rework files (
+//TODO: CLEAN UP SCREEN REDIRECT; INPUT IS A MESS!!!!
 
 public class BankProject { //Todo: FIX NEGATIVES!!!!
     private static Scanner sc = new Scanner(System.in);
@@ -14,19 +16,58 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
     private static File folder = new File("users/");
     private static File[] files = folder.listFiles();
 
-    static String[][] menuOptions = {
-            {"Quit"},
-            {"Login", "Create Account", "Forgot Password", "Quit"},
-            {"Yes", "No"}, //Login Options
-            {"BIG MEME"},
-            {"Forget Password"}, //Forget Password
-            {"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Settings", "Log Out"} //6, 7, 8, 9, 10
-    };
+    private static User u = new User();
 
     private static boolean isRunning = true;
 
-    private static int menuState = 1;
-    private static User u = new User();
+    private enum Screen {
+
+        //SCREENS
+
+        QUIT(0),
+        START(1),
+        LOGIN(2),
+        CREATE(3),
+        FORGOT(4),
+        HOMEPAGE(5),
+        DEPOSIT(6),
+        WITHDRAW(7),
+        TRANSFER(8),
+        HISTORY(9),
+        INBOX(10),
+        SETTINGS(11);
+
+        //Methods
+
+        private final int code;
+//        private final String[] opts;
+
+        Screen(int _code) {
+            code = _code;
+        }
+//
+//        Screen(int _code, String[] _opts) {
+//            code = _code;
+//            opts = _opts;
+//        }
+
+
+        public final int getCode() {
+            return code;
+        }
+    }
+
+
+    private static Screen menuState = Screen.START;
+    private static Map<Screen, String[]> menuLookup = new HashMap<>();
+
+    private static void populateMap() {
+        menuLookup.put(Screen.START, new String[]{"Login", "Create Account", "Forgot Password", "Quit"});
+        menuLookup.put(Screen.LOGIN, new String[]{"Yes", "No"});
+        menuLookup.put(Screen.CREATE, new String[]{});
+        menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Inbox", "Settings", "Log Out"}); //6, 7, 8, 9, 10, 11, 12
+        menuLookup.put(Screen.INBOX, new String[]{"Read Messages", "Send Message"});
+    }
 
     private static User loadUser(String name) {
         try {
@@ -111,7 +152,9 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
             try {
                 File dir = new File(folder + "/" + cu.getUsername());
-                dir.mkdir();
+                boolean dirMade = dir.mkdir();
+                File messages = new File(dir + "/messages");
+                boolean messagesMade = messages.mkdir();
 
                 PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(dir + "/user.txt")));
                 cu.setUserFilepath(dir + "/user.txt");
@@ -133,16 +176,11 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
         }
     }
 
-    private static void menuPrint(int menu) {
-        System.out.println("Menu State: " + menuState);
-        for (int i = 0; i < menuOptions[menu].length; i++) {
-            System.out.println((i+1) + ". " + menuOptions[menu][i]);
-        }
-    }
+    private static void menuPrint(Screen menu) {
+        System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
+        for (int i = 0; i < menuLookup.get(menu).length; i++) {
+            System.out.println((i+1) + ". " + menuLookup.get(menu)[i]);
 
-    private static void menuPrint(String[] menu) {
-        for (int i = 0; i < menu.length; i++) {
-            System.out.println((i+1)+ ". " + menu[i]);
         }
     }
 
@@ -155,7 +193,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                 default:
                     try {
                         int n = Integer.parseInt(input);
-                        if(n > 0 && n <= menuOptions[menuState].length) {
+                        if(n > 0 && n <= menuLookup.get(menuState).length) {
                             arguments[0] = input;
                             passed = true;
                         } else {
@@ -178,7 +216,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
         boolean passed = false;
         while(!passed) {
             if(username.contains(" ") || username.contains(":") || username.length() < USERNAME_MINIMUM || (username.length() > USERNAME_MAXIMUM) || (username.charAt(0) == '.')) {
-                System.out.println("Username cannot contain spaces or colons, start with a ., be less than " + USERNAME_MINIMUM + " and greater than " + USERNAME_MAXIMUM);
+                System.out.println("Username cannot contain spaces or colons, start with a ., and must be between " + USERNAME_MINIMUM + " and " + USERNAME_MAXIMUM + " characters");
                 username = sc.nextLine();
             } else {
                 passed = true;
@@ -218,18 +256,23 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
         String input[] = new String[1];
+        populateMap();
 
         while(isRunning) {
             switch(menuState) {
                 default:
+                    System.out.println("Menu State: " + menuState);
+                    sc.nextLine(); //Stall to avoid infinite loop, since this state should never be reached in practice
+                    break;
+                case QUIT:
+                    System.exit(0);
+                    break;
+                case START:
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
                     break;
-                case 0:
-                    System.exit(0);
-                    break;
-                case 2: {
-                    input[0] = "2";
+                case LOGIN: {
+                    input[0] = "2"; //not sure what's up with this but it breaks without it and too lazy to trace it rn
                     boolean loginUserPassed = false;
                     boolean passwordPassed = false;
 
@@ -262,7 +305,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     }
 
                     if(input[0].equals("1")) {
-                        menuState = 3;
+                        menuState = Screen.CREATE;
                         input[0] = "0";
                     } else {
                         System.out.println("Enter your password: ");
@@ -295,24 +338,14 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     }
                     break;
                 }
-                case 3: {  //should be condensed to a function
-                    boolean userPassed = false;
+                case CREATE: {  //should be condensed to a function
                     boolean passPassed = false;
 
-                    String username = "";
-                    String password = "";
                     System.out.println("Enter in a username: ");
 
 
-                    while (!userPassed) {
-                        username = createUsername(sc.nextLine());
-                        System.out.println("Re-enter your username: ");
-                        if (sc.nextLine().equals(username)) {
-                            userPassed = true;
-                        } else {
-                            System.out.println("Usernames do not match...enter in a username");
-                        }
-                    }
+                    String username = createUsername(sc.nextLine());
+                    String password = "";
 
                     System.out.println("Enter in a password: ");
                     while (!passPassed) {
@@ -327,11 +360,11 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
                     System.out.println("User created! Try logging in!");
                     createUser(new User(username, password, 100, "test@gmail.com"));
-                    menuState = 1;
+                    menuState = Screen.START;
                     input[0] = "0";
                     break;
                 }
-                case 4:
+                case FORGOT:
                     System.out.println("Please input your username!");
                     String usr = sc.nextLine();
                     boolean userExists = false;
@@ -343,43 +376,43 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     }
                     if(userExists) {
                         System.out.println("Please input your email address: ");
-                        //Todo: Implement email functionality, sendEmail call
                     } else {
                         System.out.println("This user does not exist!");
                     }
                     break;
-                case 5:
+                case HOMEPAGE:
                     System.out.println("Welcome back, " + u.getUsername());
                     System.out.println("Current Balance: $" + String.format("%.2f", u.getFunds()));
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
                     break;
-                case 6: //Deposit
-                case 7:
-                    System.out.println("How much would you like to " + ((menuState == 6) ? ("deposit?") : ("withdraw?")));
+                case DEPOSIT: //Deposit
+                case WITHDRAW:
+                    System.out.println("How much would you like to " + ((menuState == Screen.DEPOSIT) ? ("deposit?") : ("withdraw?")));
                     double amount;
                     amount = moneyCheck(sc.nextLine());
                     if(amount == -1) {
                         System.out.println("Returning to user page...");
                     } else {
-                        if(menuState == 6) {
+                        if(menuState == Screen.DEPOSIT) {
                             u.depositFunds(amount);
                         } else u.withdrawFunds(amount);
-                        System.out.println("$" + amount + " has been"+((menuState == 6)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + u.getFunds());
+                        System.out.println("$" + amount + " has been"+((menuState == Screen.DEPOSIT)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + String.format("%.2f", u.getFunds()));
                     }
-                    menuState = 5;
+                    menuState = Screen.HOMEPAGE;
                     input[0] = "0";
                     break;
-                case 8:
+                case TRANSFER:
                     System.out.println("Who would you like to transfer funds to?");
                     String transferUser = sc.nextLine();
                     System.out.println("How much would you like to transfer?");
                     double transferAmount = moneyCheck(sc.nextLine());
                     u.transferFunds(transferAmount, transferUser);
-                    menuState = 5;
+                    System.out.println("$" + transferAmount + "has been transferred to user " + transferUser + "! Your total is now $" + String.format("%.2f", u.getFunds()));
+                    menuState = Screen.HOMEPAGE;
                     input[0] = "0";
                     break;
-                case 9: //Todo: Clean this up for settings!
+                case HISTORY:
                     System.out.println("Account History");
                     String[] s = u.getHistory();
                     double ct = 0;
@@ -387,23 +420,16 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     for(int i = 0; i < s.length; i++) {
                         System.out.print((i + 1) + ": ");
 
-
                         boolean transferred = false;
                         boolean received = false;
-                        boolean monetary = false;
-                        double change = 0;
+                        double change = Double.parseDouble(s[i].substring(2, (s[i].lastIndexOf(":") > 2) ? (s[i].lastIndexOf(":")) : (s[i].length())));
 
-                        if(s[i].charAt(0) != 'S') {
-                            change = Double.parseDouble(s[i].substring(2, (s[i].lastIndexOf(":") > 2) ? (s[i].lastIndexOf(":")) : (s[i].length())));
-                            monetary = true;
-                        }
                         /*
                         ACTION CODES:
                             - Deposited — D:{Amount}
                             - Withdrew — W:{Amount}
                             — Transferred — T:{Amount}:{Recipient}
                             - Received — R:{Amount}:{Sender}
-                            - Settings — S:{String}
                         */
 
                         switch (s[i].charAt(0)) {
@@ -425,86 +451,84 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                                 ct += change;
                                 received = true;
                                 break;
-                            case 'S':
-                                System.out.print("Changed Setting: ");
-                                break;
                         }
-                        if(monetary) {
-                            System.out.print(String.format("%.2f", change));
-                            if (transferred) {
-                                System.out.print(" to " + s[i].substring(s[i].lastIndexOf(":") + 1));
-                            } else if (received) {
-                                System.out.print(" from " + s[i].substring(s[i].lastIndexOf(":") + 1));
-                            }
-                            System.out.println(" - Balance: " + String.format("%.2f", ct));
-                        } else {
-                            System.out.println(s[i].substring(2));
+                        System.out.print(String.format("%.2f", change));
+                        if (transferred) {
+                            System.out.print(" to " + s[i].substring(s[i].lastIndexOf(":") + 1));
+                        } else if (received) {
+                            System.out.print(" from " + s[i].substring(s[i].lastIndexOf(":") + 1));
                         }
+                        System.out.println(" - Balance: " + String.format("%.2f", ct));
                     }
-                    menuState = 5;
+                    menuState = Screen.HOMEPAGE;
                     input[0] = "0";
+                    break;
+                case INBOX: //Inbox
+                    menuPrint(menuState);
                     break;
             }
 
 
-
-            switch(menuState) {
+            switch(menuState) { //Todo: Merge this with ^
                 default:
                     break;
-                case 0:
+                case QUIT:
                     break;
-                case 1:
+                case START:
                     switch(input[0]) {
                         case "0":
                             break;
                         case "1": //login
-                            menuState = 2;
+                            menuState = Screen.LOGIN;
                             break;
                         case "2": //create account
-                            menuState = 3;
+                            menuState = Screen.CREATE;
                             break;
                         case "3": //forgot password
-                            menuState = 4;
+                            menuState = Screen.FORGOT;
                             break;
                         case "4":
-                            menuState = 0;
+                            menuState = Screen.QUIT;
                             break;
                     }
                     break;
-                case 2:
-                    menuState = 5;
+                case LOGIN:
+                    menuState = Screen.HOMEPAGE;
                     break;
-                case 4:
-                    menuState = 1;
+                case FORGOT:
+                    menuState = Screen.START;
                     break;
-                case 5:
+                case HOMEPAGE:
                     switch(input[0]) {
-                        case "0":
+                        case "0": //Nothing
                             break;
-                        case "1":
-                            menuState = 6;
+                        case "1": //Deposit
+                            menuState = Screen.DEPOSIT;
                             break;
-                        case "2":
-                            menuState = 7;
+                        case "2": //Withdraw
+                            menuState = Screen.WITHDRAW;
                             break;
-                        case "3":
-                            menuState = 8;
+                        case "3": //Transfer
+                            menuState = Screen.TRANSFER;
                             break;
-                        case "4":
-                            menuState = 9;
+                        case "4": //History
+                            menuState = Screen.HISTORY;
                             break;
-                        case "5":
-                            menuState = 10;
+                        case "5": //Inbox
+                            menuState = Screen.INBOX;
                             break;
-                        case "6":
+                        case "6": //Settings
+                            menuState = Screen.SETTINGS;
+                            break;
+                        case "7": //Log-Out
                             System.out.println("Logging out!");
-                            menuState = 1;
+                            menuState = Screen.START;
                             break;
                     }
                     break;
-                case 6:
+                case HISTORY:
                     break;
-                case 9:
+                case INBOX:
                     break;
             }
         }
