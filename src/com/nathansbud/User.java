@@ -13,7 +13,6 @@ public class User {
 
     private double funds;
 
-    private File userFile;
     private String userFilepath;
 
     public User() {}
@@ -61,7 +60,6 @@ public class User {
     public String getUsername() {
         return username;
     }
-
     public void setUsername(String _username) {
         username = _username;
     }
@@ -136,13 +134,14 @@ public class User {
             File old = new File(selfPath);
 
             re.renameTo(old); //Todo: Figure out how to handle this bool?
+
             if(type == 2) {
-                rewriteFunds(amount, 3, send); //This is good recursion, yes?
+                rewriteFunds(amount, 3, send); //This is good recursion, yes? Maybe?
             }
         } catch(IOException e) {
             System.out.println("Fund Writing Fail");
         }
-    } //Todo: Clean up this function, it's kinda spaghetti
+    }
     public void depositFunds(double deposit) {
         funds += deposit;
         rewriteFunds(deposit, 0, username);
@@ -177,14 +176,6 @@ public class User {
         userFilepath = _userFilepath;
     }
 
-
-    public File getUserFile() {
-        return userFile;
-    }
-    public void setUserFile(File _userFile) {
-        userFile = _userFile;
-    }
-
     public String getEmail() {
         return email;
     }
@@ -192,7 +183,54 @@ public class User {
         email = _email;
     }
 
-    public static void sendMessage(String from, String to, String message) {
+    //Static method because potential system messages; "Nathansbank" no-reply messages or something, idk...maybe shouldn't be static
+    public static void sendMessage(String subject, String sender, String recipient, String body) {
+        File toPath = new File("users/" + recipient);
+        File fromPath = new File("users/" + sender);
 
+        if(toPath.isDirectory() && fromPath.isDirectory()) {
+            long unixTime = System.currentTimeMillis() / 1000L;
+
+            File to = new File(toPath + "/messages/" + subject + "-" + unixTime + ".txt");
+            File from = new File(fromPath + "/messages/" + subject + "-" + unixTime + ".txt");
+
+            try {
+                if (to.isFile()) {
+                    PrintWriter toMessage = new PrintWriter(new BufferedWriter(new FileWriter(to)));
+                    toMessage.println("M:"+body + ":" + sender);
+                    toMessage.close();
+
+                    if(!sender.equals(recipient)) {
+                        PrintWriter fromMessage = new PrintWriter(new BufferedWriter(new FileWriter(from)));
+                        fromMessage.println("M:" + body + ":" + sender);
+                        fromMessage.close();
+                    }
+                } else {
+                    PrintWriter toMessage = new PrintWriter(new BufferedWriter(new FileWriter(to)));
+
+                    toMessage.println("F:" + sender);
+                    toMessage.println("T:" + recipient);
+                    toMessage.println("M:"+body + ":" + sender);
+
+                    toMessage.close();
+
+
+                    if(!sender.equals(recipient)) {
+                        PrintWriter fromMessage = new PrintWriter(new BufferedWriter(new FileWriter(from)));
+                        fromMessage.println("F:" + sender);
+                        fromMessage.println("T:" + recipient);
+                        fromMessage.println("M:" + body + ":" + sender);
+
+                        fromMessage.close();
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("SendMessage IOExcept");
+            }
+        } else if(!toPath.isDirectory()) {
+            System.out.println("Recipient does not exist!");
+        } else {
+            System.out.println("Sender does not exist!");
+        }
     }
 }

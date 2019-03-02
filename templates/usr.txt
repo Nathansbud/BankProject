@@ -1,6 +1,0 @@
-Username
-Password
-UID
-Current Funds
-Email
-TransactionHistory

@@ -4,3 +4,5 @@ users/
 lib/
 
 BankProject.iml
+
+*.kotlin_module
