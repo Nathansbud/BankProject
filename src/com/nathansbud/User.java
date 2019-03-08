@@ -36,9 +36,10 @@ public class User {
 
     public String[] getHistory() {
         ArrayList<String> history = new ArrayList<>();
+        System.out.println(userFilepath);
 
         try {
-            BufferedReader b = new BufferedReader(new FileReader(userFilepath));
+            BufferedReader b = new BufferedReader(new FileReader(userFilepath + File.separator + "user.txt"));
             for (int i = 0; i < HISTORY_LOC; i++) {
                 b.readLine();
             }
@@ -107,8 +108,8 @@ public class User {
         }
 
 
-        String selfPath = "users/" + user + "/user.txt";
-        String tempPath = "users/" + user + "/user.tst";
+        String selfPath = "users" + File.separator + user + File.separator + "user.txt";
+        String tempPath = "users" + File.separator + user + File.separator + "user.tst";
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(selfPath));
@@ -153,7 +154,7 @@ public class User {
         return withdraw;
     }
     public void transferFunds(double transfer, String user) {
-        File f = new File("users/" + user + "/user.txt");
+        File f = new File("users" + File.separator + user + File.separator + "user.txt");
         if(f.exists()) {
             funds -= transfer;
             rewriteFunds(transfer, 2, user);
@@ -167,7 +168,7 @@ public class User {
     }
     public void setFunds(double _funds) {
         funds = _funds;
-    } //Warning: Should only be used on account create!
+    }
     
     public String getUserFilepath() {
         return userFilepath;

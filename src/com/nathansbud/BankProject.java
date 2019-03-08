@@ -8,12 +8,12 @@ import java.util.Scanner;
 import java.io.File;
 import java.util.Map;
 
-//TODO: CLEAN UP SCREEN REDIRECT; INPUT IS A MESS!!!!
+//Todo: File.separator replace over /; cross-platform
 
-public class BankProject { //Todo: FIX NEGATIVES!!!!
+public class BankProject {
     private static Scanner sc = new Scanner(System.in);
 
-    private static File folder = new File("users/");
+    private static File folder = new File("users");
     private static File[] files = folder.listFiles();
 
     private static User u = new User();
@@ -81,9 +81,9 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
     private static User loadUser(String name) {
         try {
-            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + name + "/user.txt"));
+            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + name + File.separator + "user.txt"));
             User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine()), b.readLine()); //User, Password, UID
-            temp.setUserFilepath(folder + "/" + name);
+            temp.setUserFilepath(folder + File.separator + name);
             b.close();
             return temp;
 
@@ -132,7 +132,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                         break createUser;
                     }
                     try {
-                        BufferedReader b = new BufferedReader(new FileReader(f + "/user.txt"));
+                        BufferedReader b = new BufferedReader(new FileReader(f + File.separator + "user.txt"));
 
                         for (int i = 0; i < UID_LOC; i++) {
                             b.readLine();
@@ -161,12 +161,12 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
             }
 
             try {
-                File dir = new File(folder + "/" + cu.getUsername());
+                File dir = new File(folder + File.separator + cu.getUsername());
                 boolean dirMade = dir.mkdir();
-                File messages = new File(dir + "/messages");
+                File messages = new File(dir + File.separator + "messages");
                 boolean messagesMade = messages.mkdir();
 
-                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(dir + "/user.txt")));
+                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(dir + File.separator + "user.txt")));
                 cu.setUserFilepath(dir.getPath());
                 cu.setFunds(0);
 
@@ -328,7 +328,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
 
                         String passMatch = "";
                         try {
-                            BufferedReader b = new BufferedReader(new FileReader(folder + "/" + login + "/user.txt"));
+                            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + login + File.separator + "user.txt"));
                             for (int i = 0; i < PWD_LOC; i++) {
                                 b.readLine();
                             }
@@ -412,7 +412,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                         if(menuState == Screen.DEPOSIT) {
                             u.depositFunds(amount);
                         } else u.withdrawFunds(amount);
-                        System.out.println("$" + amount + " has been"+((menuState == Screen.DEPOSIT)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + String.format("%.2f", u.getFunds()));
+                        System.out.println("$" + String.format("%.2f", amount) + " has been"+((menuState == Screen.DEPOSIT)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + String.format("%.2f", u.getFunds()));
                     }
                     menuState = Screen.HOMEPAGE; //State Change: Withdraw/Deposit -> Start
                     break;
@@ -422,7 +422,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     System.out.println("How much would you like to transfer?");
                     double transferAmount = moneyCheck(sc.nextLine());
                     u.transferFunds(transferAmount, transferUser);
-                    System.out.println("$" + transferAmount + "has been transferred to user " + transferUser + "! Your total is now $" + String.format("%.2f", u.getFunds()));
+                    System.out.println("$" + String.format("%.2f", transferAmount) + " has been transferred to user " + transferUser + "! Your total is now $" + String.format("%.2f", u.getFunds()));
                     break;
                 case HISTORY:
                     System.out.println("Account History");
@@ -480,7 +480,7 @@ public class BankProject { //Todo: FIX NEGATIVES!!!!
                     break;
                 case INBOX:
                     System.out.println("Messages: ");
-                    File[] fol = new File(u.getUserFilepath() + "/messages").listFiles();
+                    File[] fol = new File(u.getUserFilepath() + File.separator + "messages").listFiles();
                     if(fol != null) {
                         if(fol.length == 0 || (fol.length == 1 && fol[0].getName().equals(".DS_Store"))) {
                             System.out.println("You have no messages!");
