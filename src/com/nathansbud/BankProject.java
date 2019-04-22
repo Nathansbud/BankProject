@@ -410,8 +410,12 @@ public class BankProject {
                         System.out.println("Returning to user page...");
                     } else {
                         if(menuState == Screen.DEPOSIT) {
+//                          Transaction t = new Transaction("#", u.getUsername(), amount, String.valueOf(System.currentTimeMillis() / 1000L));
                             u.depositFunds(amount);
-                        } else u.withdrawFunds(amount);
+                        } else {
+//                          Transaction t = new Transaction(u.getUsername(), "#", amount, String.valueOf(System.currentTimeMillis() / 1000L));
+                            u.withdrawFunds(amount);
+                        }
                         System.out.println("$" + String.format("%.2f", amount) + " has been"+((menuState == Screen.DEPOSIT)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + String.format("%.2f", u.getFunds()));
                     }
                     menuState = Screen.HOMEPAGE; //State Change: Withdraw/Deposit -> Start
