@@ -1,6 +1,3 @@
-## Bank Project
+## Nathansbank
 
-ib cs nonsense
-
-dependencies: 
-- javax.mail, probably (if I use it)
+A small banking program, because who wouldn't love storing their funds in a secure™ student project?

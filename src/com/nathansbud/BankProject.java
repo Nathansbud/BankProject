@@ -13,7 +13,7 @@ import java.util.Map;
 public class BankProject {
     private static Scanner sc = new Scanner(System.in);
 
-    private static File folder = new File("users");
+    private static File folder = new File("data");
     private static File[] files = folder.listFiles();
 
     private static User u = new User();
@@ -126,7 +126,7 @@ public class BankProject {
             int t = 0; //User ID nonsense
 
             for (File f : files) {
-                if(!f.getName().equals(".DS_Store")) {
+                if(!(f.getName().equals(".DS_Store") || f.getName().equals(".gitkeep"))) {
                     if (f.getName().equals(cu.getUsername())) {
                         System.out.println("Attempted to add invalid user!");
                         break createUser;

@@ -108,8 +108,8 @@ public class User {
         }
 
 
-        String selfPath = "users" + File.separator + user + File.separator + "user.txt";
-        String tempPath = "users" + File.separator + user + File.separator + "user.tst";
+        String selfPath = "data" + File.separator + user + File.separator + "user.txt";
+        String tempPath = "data" + File.separator + user + File.separator + "user.tst";
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(selfPath));
@@ -154,7 +154,7 @@ public class User {
         return withdraw;
     }
     public void transferFunds(double transfer, String user) {
-        File f = new File("users" + File.separator + user + File.separator + "user.txt");
+        File f = new File("data" + File.separator + user + File.separator + "user.txt");
         if(f.exists()) {
             funds -= transfer;
             rewriteFunds(transfer, 2, user);
@@ -186,14 +186,14 @@ public class User {
 
     //Static method because potential system messages; "Nathansbank" no-reply messages or something, idk...maybe shouldn't be static
     public static void sendMessage(String subject, String sender, String recipient, String body) {
-        File toPath = new File("users/" + recipient);
-        File fromPath = new File("users/" + sender);
+        File toPath = new File("data" + File.separator + recipient);
+        File fromPath = new File("data" + File.separator + sender);
 
         if(toPath.isDirectory() && fromPath.isDirectory()) {
             long unixTime = System.currentTimeMillis() / 1000L;
 
-            File to = new File(toPath + "/messages/" + subject + "-" + unixTime + ".txt");
-            File from = new File(fromPath + "/messages/" + subject + "-" + unixTime + ".txt");
+            File to = new File(toPath + File.separator +"messages" + File.separator + subject + "-" + unixTime + ".txt");
+            File from = new File(fromPath + File.separator +"messages" + File.separator + subject + "-" + unixTime + ".txt");
 
             try {
                 if (to.isFile()) {

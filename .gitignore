@@ -6,3 +6,5 @@ lib/
 BankProject.iml
 
 *.kotlin_module
+
+data/**/*.txt
