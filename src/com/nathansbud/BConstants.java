@@ -1,11 +1,7 @@
 package com.nathansbud;
 
 
-public final class Constants {
-    private Constants() {
-        //Should never be called
-    }
-
+public final class BConstants {
     public static final int USERNAME_LOC = 0;
     public static final int PWD_LOC = 1;
     public static final int UID_LOC = 2;

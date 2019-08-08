@@ -2,9 +2,12 @@
 *.class
 users/
 lib/
+out/
+creds/*.json
 
 BankProject.iml
 
 *.kotlin_module
 
 data/**/*.txt
+

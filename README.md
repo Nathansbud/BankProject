@@ -1,3 +1,5 @@
 ## Nathansbank
 
-A small banking program, because who wouldn't love storing their funds in a secure™ student project?
+IB Computer Science banking project, because who wouldn't love storing their hard-earned dollars in a secure™ student bank?
+
+

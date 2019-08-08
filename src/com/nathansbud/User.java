@@ -3,7 +3,7 @@ package com.nathansbud;
 import java.io.*;
 import java.util.ArrayList;
 
-import static com.nathansbud.Constants.*;
+import static com.nathansbud.BConstants.*;
 
 public class User {
     private String username;
@@ -184,7 +184,7 @@ public class User {
         email = _email;
     }
 
-    //Static method because potential system messages; "Nathansbank" no-reply messages or something, idk...maybe shouldn't be static
+    //Static method because potential system messages; "BankProject" no-reply messages or something, idk...maybe shouldn't be static
     public static void sendMessage(String subject, String sender, String recipient, String body) {
         File toPath = new File("data" + File.separator + recipient);
         File fromPath = new File("data" + File.separator + sender);

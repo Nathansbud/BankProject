@@ -1,14 +1,27 @@
 package com.nathansbud;
 
-import static com.nathansbud.Constants.*;
+import static com.nathansbud.BConstants.*;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.File;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+
 import java.util.HashMap;
 import java.util.Scanner;
-import java.io.File;
 import java.util.Map;
 
-//Todo: File.separator replace over /; cross-platform
+
+/*------------*\
+Todo:
+    - Premium account/user designation
+    - Email-related stuff
+    - User IDs
+
+\*------------*/
 
 public class BankProject {
     private static Scanner sc = new Scanner(System.in);
@@ -17,6 +30,7 @@ public class BankProject {
     private static File[] files = folder.listFiles();
 
     private static User u = new User();
+    private static Emailer emailer = new Emailer("creds"+File.separator+"email.json");
 
     private static boolean isRunning = true;
     private static boolean debug = true;
@@ -38,7 +52,6 @@ public class BankProject {
         MESSAGES(10),
         INBOX(11),
         OUTBOX(12),
-
         SETTINGS(15),
 
         //NON-STATE SCREENS
@@ -58,7 +71,6 @@ public class BankProject {
             return code;
         }
     }
-
 
     private static Screen menuState = Screen.START;
     private static Map<Screen, String[]> menuLookup = new HashMap<>();
@@ -256,15 +268,13 @@ public class BankProject {
 
     public static String getFileUser(File f) {
         return f.getName();
-                //.substring(0, f.getName().lastIndexOf("."));
     }
-
 
 
     public static void main(String[] args) {
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
-        String input[] = new String[1];
+        String[] input = new String[1];
         populateMap();
 
 //        debugSetup("Nathansbud", Screen.HOMEPAGE);
@@ -375,7 +385,7 @@ public class BankProject {
                     }
 
                     System.out.println("User created! Try logging in!");
-                    createUser(new User(username, password, 100, "test@gmail.com"));
+                    createUser(new User(username, password, 0, "test@gmail.com"));
                     menuState = Screen.START; //State Change: Create -> Start
                     break;
                 }
