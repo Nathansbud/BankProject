@@ -10,4 +10,4 @@ BankProject.iml
 *.kotlin_module
 
 data/**/*.txt
-
+data/**/*.json

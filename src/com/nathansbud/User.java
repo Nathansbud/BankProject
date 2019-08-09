@@ -1,6 +1,13 @@
 package com.nathansbud;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+
 import java.util.ArrayList;
 
 import static com.nathansbud.BConstants.*;
@@ -10,12 +17,15 @@ public class User {
     private String pwd;
     private String uid; //Int - 7
     private String email;
+    private String created;
 
     private double funds;
 
     private String userFilepath;
 
-    public User() {}
+    public User() {
+        uid = generateUID();
+    }
 
     public User(String _username, String _pwd, double _funds, String _email) {
         username = _username;
@@ -39,10 +49,11 @@ public class User {
         System.out.println(userFilepath);
 
         try {
-            BufferedReader b = new BufferedReader(new FileReader(userFilepath + File.separator + "user.txt"));
+            BufferedReader b = new BufferedReader(new FileReader(userFilepath + File.separator + "transactions.txt"));
             for (int i = 0; i < HISTORY_LOC; i++) {
                 b.readLine();
             }
+
             String line;
             while((line = b.readLine()) != null) {
                 history.add(line);
@@ -73,7 +84,7 @@ public class User {
     }
 
 
-    public static String generateUID() {
+    public static String generateUID() { //Todo: This doesn't actually check for collisions
         String s = Integer.toString((int)(Math.random()*9+1));
 
         for(int i = 1; i < UID_LENGTH; i++) {
@@ -89,6 +100,12 @@ public class User {
         uid = _uid;
     }
 
+    public String getCreated() {
+        return created;
+    }
+    public void setCreated(String _created) {
+        created = _created;
+    }
 
     public void rewriteFunds(double amount, int type, String user) {
         String actionString;
@@ -108,8 +125,8 @@ public class User {
         }
 
 
-        String selfPath = "data" + File.separator + user + File.separator + "user.txt";
-        String tempPath = "data" + File.separator + user + File.separator + "user.tst";
+        String selfPath = "data" + File.separator + user + File.separator + "transactions.txt";
+        String tempPath = "data" + File.separator + user + File.separator + "transactions.tst";
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(selfPath));
@@ -154,10 +171,11 @@ public class User {
         return withdraw;
     }
     public void transferFunds(double transfer, String user) {
-        File f = new File("data" + File.separator + user + File.separator + "user.txt");
+        File f = new File("data" + File.separator + user + File.separator + "transactions.txt");
         if(f.exists()) {
             funds -= transfer;
             rewriteFunds(transfer, 2, user);
+            System.out.println("$" + String.format("%.2f", transfer) + " has been transferred to user " + user + "! Your total is now $" + String.format("%.2f", funds));
         } else {
             System.out.println("Transfer failed, user does not exist!");
         }

@@ -1,27 +1,31 @@
 package com.nathansbud;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import static com.nathansbud.BConstants.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.File;
 import java.io.FileReader;
-import java.io.PrintWriter;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Map;
 
 
-/*------------*\
+/*--------------------------------------------*\
 Todo:
     - Premium account/user designation
     - Email-related stuff
-    - User IDs
+    - UIDs
 
-\*------------*/
+\*--------------------------------------------*/
 
 public class BankProject {
     private static Scanner sc = new Scanner(System.in);
@@ -31,9 +35,11 @@ public class BankProject {
 
     private static User u = new User();
     private static Emailer emailer = new Emailer("creds"+File.separator+"email.json");
+    private static JSONParser json = new JSONParser();
 
     private static boolean isRunning = true;
     private static boolean debug = true;
+
 
     private enum Screen {
 
@@ -53,6 +59,8 @@ public class BankProject {
         INBOX(11),
         OUTBOX(12),
         SETTINGS(15),
+
+        TERMINATION(50),
 
         //NON-STATE SCREENS
 
@@ -89,19 +97,32 @@ public class BankProject {
         menuLookup.put(Screen.CREATE, new String[]{});
         menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Log Out"}); //6, 7, 8, 9, 10, 11, 12
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
+        menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account"});
     }
 
     private static User loadUser(String name) {
+        JSONParser json = new JSONParser();
         try {
-            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + name + File.separator + "user.txt"));
-            User temp = new User(b.readLine(), b.readLine(), b.readLine(), Double.parseDouble(b.readLine()), b.readLine()); //User, Password, UID
-            temp.setUserFilepath(folder + File.separator + name);
+            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + name + File.separator + "user.json"));
+            JSONObject userJson = (JSONObject)json.parse(b);
             b.close();
-            return temp;
 
-        } catch(IOException e) {
-            System.out.println("User does not exist!");
-            return new User("NULL", "NULL", "NULL", 0, "NULL");
+            User loadedUser = new User();
+
+            loadedUser.setUsername((String)userJson.get("username"));
+            loadedUser.setPwd((String)userJson.get("password"));
+            loadedUser.setUID((String)userJson.get("uid"));
+            loadedUser.setCreated((String)userJson.get("user_created"));
+            loadedUser.setUserFilepath(folder + File.separator + name);
+
+            b = new BufferedReader(new FileReader(new File(loadedUser.getUserFilepath() + File.separator + "transactions.txt")));
+            loadedUser.setFunds(Double.parseDouble(b.readLine()));
+            b.close();
+
+            return loadedUser;
+        } catch(IOException | ParseException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -129,73 +150,97 @@ public class BankProject {
         return amount;
     }
 
-    private static void createUser(User cu) {
-        createUser: {
-            String uids[] = new String[files.length];
-            boolean uidPassed = true;
-            double tempFunds = cu.getFunds();
+    @SuppressWarnings("unchecked") private static void createUser(User cu) {
+        JSONObject userJson = new JSONObject();
 
-            int t = 0; //User ID nonsense
-
-            for (File f : files) {
-                if(!(f.getName().equals(".DS_Store") || f.getName().equals(".gitkeep"))) {
-                    if (f.getName().equals(cu.getUsername())) {
-                        System.out.println("Attempted to add invalid user!");
-                        break createUser;
-                    }
-                    try {
-                        BufferedReader b = new BufferedReader(new FileReader(f + File.separator + "user.txt"));
-
-                        for (int i = 0; i < UID_LOC; i++) {
-                            b.readLine();
-                        }
-                        uids[t] = b.readLine();
-
-                        if (uids[t].equals(cu.getUID())) {
-                            uidPassed = false;
-                        }
-                        t++;
-                    } catch (IOException e) {
-                        System.out.println("CreateUser UID LoadException"); //should never happen?
-                    }
+        for(File f : files) {
+            if(!(f.getName().equals(".DS_Store") || f.getName().equals(".gitkeep"))) {
+                if(f.getName().equals(cu.getUsername())) {
+                    System.out.println("Tried to add invalid user!");
+                    return;
                 }
-            }
-
-            while(!uidPassed) { //Generate new UID if collision
-                cu.setUID(User.generateUID());
-                uidPassed = true;
-
-                for(String c : uids) {
-                    if(c.equals(cu.getUID())) {
-                       uidPassed = false;
-                    }
-                }
-            }
-
-            try {
-                File dir = new File(folder + File.separator + cu.getUsername());
-                boolean dirMade = dir.mkdir();
-                File messages = new File(dir + File.separator + "messages");
-                boolean messagesMade = messages.mkdir();
-
-                PrintWriter nu = new PrintWriter(new BufferedWriter(new FileWriter(dir + File.separator + "user.txt")));
-                cu.setUserFilepath(dir.getPath());
-                cu.setFunds(0);
-
-                nu.println(cu.getUsername());
-                nu.println(cu.getPwd());
-                nu.println(cu.getUID());
-                nu.println(cu.getFunds());
-                nu.println(cu.getEmail());
-                nu.println("#");
-                nu.close();
-
-                files = folder.listFiles();
-                cu.depositFunds(tempFunds);
-            } catch (IOException e) {
-                System.out.println("CreateUser IOExcept");
             }
         }
+
+        try {
+            BufferedReader b = new BufferedReader(new FileReader(new File(folder + File.separator + "uids.txt")));
+            ArrayList<String> uids = new ArrayList<String>();
+            String uidRead;
+
+            while((uidRead = b.readLine()) != null) {
+                uids.add(uidRead);
+            }
+            b.close();
+
+            while(uids.contains(cu.getUID())) {
+                cu.setUID(User.generateUID());
+            }
+            BufferedWriter bw = new BufferedWriter(new FileWriter(folder + File.separator + "uids.txt", true));
+            bw.write(cu.getUID()+"\n");
+            bw.flush();
+            bw.close();
+        } catch(IOException e) {
+            System.out.println("Failed to find UID file!");
+            return;
+        }
+
+        userJson.put("username", cu.getUsername());
+        userJson.put("password", cu.getPwd());
+        userJson.put("email", cu.getEmail());
+        userJson.put("uid", cu.getUID());
+        userJson.put("user_created", cu.getCreated());
+
+
+        File userDir = new File(folder + File.separator + cu.getUsername());
+        userDir.mkdir();
+        File messagesDir = new File(userDir + File.separator + "messages");
+        messagesDir.mkdir();
+
+
+        try{
+            FileWriter w = new FileWriter(userDir + File.separator + "user.json");
+            w.write(userJson.toJSONString());
+            w.flush();
+            w.close();
+
+            w = new FileWriter(userDir + File.separator + "transactions.txt");
+            w.write(cu.getFunds()+"\n");
+            w.flush();
+            w.close();
+        } catch(IOException e) {
+            System.out.println("BIG SAD, failed to write out user json file");
+            e.printStackTrace();
+        }
+
+        files = folder.listFiles();
+    }
+    private static void removeUser(User cu) {
+        File f = new File(cu.getUserFilepath());
+        try {
+            BufferedReader r = new BufferedReader(new FileReader(new File(folder + File.separator + "uids.txt")));
+            ArrayList<String> uids = new ArrayList<>();
+            String l;
+            while((l = r.readLine()) != null) {
+                uids.add(l);
+            }
+            System.out.println(r.lines());
+            r.close();
+        } catch(IOException e) {
+            System.out.println(":((");
+        }
+
+
+        removeDirectory(f);
+
+    }
+
+    private static void removeDirectory(File dir) {
+        if(dir.isDirectory()) {
+            for(File f : dir.listFiles()) {
+                removeDirectory(f);
+            }
+        }
+        dir.delete();
     }
 
     private static void menuPrint(Screen menu) {
@@ -257,7 +302,7 @@ public class BankProject {
         boolean passed = false;
         while(!passed) {
             if(pass.length() < PASSWORD_MINIMUM) {
-                System.out.println("Password must be greater than 4 characters");
+                System.out.println("Password must be at least " + PASSWORD_MINIMUM + " characters!");
                 pass = sc.nextLine();
             } else {
                 passed = true;
@@ -277,8 +322,6 @@ public class BankProject {
         String[] input = new String[1];
         populateMap();
 
-//        debugSetup("Nathansbud", Screen.HOMEPAGE);
-
         while(isRunning) {
             System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
             input[0] = "0";
@@ -295,6 +338,7 @@ public class BankProject {
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
                     break;
+                //Todo: Make separate function
                 case LOGIN: {
                     boolean loginUserPassed = false;
                     boolean passwordPassed = false;
@@ -337,14 +381,15 @@ public class BankProject {
                         System.out.println("Enter your password: ");
 
                         String passMatch = "";
+
+
                         try {
-                            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + login + File.separator + "user.txt"));
-                            for (int i = 0; i < PWD_LOC; i++) {
-                                b.readLine();
-                            }
-                            passMatch = b.readLine();
+                            BufferedReader b = new BufferedReader(new FileReader(folder + File.separator + login + File.separator + "user.json"));
+                            JSONObject userJson = (JSONObject)json.parse(b);
                             b.close();
-                        } catch (IOException e) {
+
+                            passMatch = (String)userJson.get("password");
+                        } catch (IOException | ParseException e) {
                             System.out.println("Username does not exist!");
                         }
 
@@ -364,7 +409,8 @@ public class BankProject {
                     }
                     break;
                 }
-                case CREATE: {  //should be condensed to a function
+                //Todo: Make separate function
+                case CREATE: {
                     boolean passPassed = false;
 
                     System.out.println("Enter in a username: ");
@@ -385,7 +431,16 @@ public class BankProject {
                     }
 
                     System.out.println("User created! Try logging in!");
-                    createUser(new User(username, password, 0, "test@gmail.com"));
+
+                    User cu = new User();
+
+                    cu.setUsername(username);
+                    cu.setPwd(password);
+                    cu.setFunds(0);
+                    cu.setEmail("test@gmail.com");
+                    cu.setCreated(String.valueOf(System.currentTimeMillis() / 1000L));
+
+                    createUser(cu);
                     menuState = Screen.START; //State Change: Create -> Start
                     break;
                 }
@@ -399,6 +454,7 @@ public class BankProject {
                             break;
                         }
                     }
+
                     if(userExists) {
                         System.out.println("Please input your email address: ");
                     } else {
@@ -436,7 +492,6 @@ public class BankProject {
                     System.out.println("How much would you like to transfer?");
                     double transferAmount = moneyCheck(sc.nextLine());
                     u.transferFunds(transferAmount, transferUser);
-                    System.out.println("$" + String.format("%.2f", transferAmount) + " has been transferred to user " + transferUser + "! Your total is now $" + String.format("%.2f", u.getFunds()));
                     break;
                 case HISTORY:
                     System.out.println("Account History");
@@ -503,7 +558,6 @@ public class BankProject {
                             input = checkInput(Screen.CHOICE, sc.nextLine());
                             switch(input[0]) { //State Change: Inbox -> Outbox/Homepage
                                 case "1":
-                                    System.out.println("DADDY");
                                     menuState = Screen.OUTBOX;
                                     break;
                                 case "2:":
@@ -532,6 +586,26 @@ public class BankProject {
                     String body = sc.nextLine();
                     User.sendMessage(subject, u.getUsername(), recipient, body);
                     menuState = Screen.HOMEPAGE; //State Change: Outbox -> Homepage
+                    break;
+                case SETTINGS:
+                    menuPrint(menuState);
+                    input = checkInput(sc.nextLine());
+                    break;
+                case TERMINATION:
+                    System.out.println("Are you sure you want to terminate your account?");
+                    menuPrint(Screen.CHOICE);
+                    input = checkInput(Screen.CHOICE, sc.nextLine());
+                    switch(input[0]) {
+                        case "1":
+                            removeUser(u);
+                            u = null;
+                            menuState = Screen.START;
+                            break;
+                        case "2":
+                            menuState = Screen.HOMEPAGE;
+                            break;
+                    }
+                    input[0] = "0";
                     break;
             }
 
@@ -595,14 +669,23 @@ public class BankProject {
                     }
                     break;
                 case TRANSFER:
-                    menuState = Screen.HOMEPAGE;
+                    menuState = Screen.HOMEPAGE; //State Change: Transfer -> Homepage
                     break;
                 case HISTORY:
-                    menuState = Screen.HOMEPAGE;
+                    menuState = Screen.HOMEPAGE; //State Change: Transfer -> Homepage
                     break;
                 case CREATE:
                     break;
                 case OUTBOX:
+                    break;
+                case SETTINGS:
+                    switch(input[0]) {
+                        case "1": //reset pwd
+                            break;
+                        case "2":
+                            menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                            break;
+                    }
                     break;
                 case MESSAGES:
                     switch(input[0]) {
