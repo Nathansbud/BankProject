@@ -60,8 +60,9 @@ public class BankProject {
         OUTBOX(12),
         SETTINGS(15),
 
-        TERMINATION(50),
 
+        TERMINATION(50),
+        MASS_TERMINATION(999),
         //NON-STATE SCREENS
 
         CHOICE(-10), //Used for Yes/No options in map
@@ -81,7 +82,7 @@ public class BankProject {
     }
 
     private static Screen menuState = Screen.START;
-    private static Map<Screen, String[]> menuLookup = new HashMap<>();
+    private static Map<Screen, String[]> menuLookup;
 
     public static void debugSetup(String user, Screen state) {
         if(debug) {
@@ -90,14 +91,18 @@ public class BankProject {
         }
     }
 
-    private static void populateMap() {
+    private static void populateMap(User.UserType userType) {
+        menuLookup = new HashMap<Screen, String[]>();
         menuLookup.put(Screen.CHOICE, new String[]{"Yes", "No"});
-
         menuLookup.put(Screen.START, new String[]{"Login", "Create Account", "Forgot Password", "Quit"});
         menuLookup.put(Screen.CREATE, new String[]{});
         menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Log Out"}); //6, 7, 8, 9, 10, 11, 12
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
-        menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account"});
+        if(userType != User.UserType.ADMIN) {
+            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account"});
+        } else {
+            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All"});
+        }
     }
 
     private static User loadUser(String name) {
@@ -115,6 +120,18 @@ public class BankProject {
             loadedUser.setCreated((String)userJson.get("user_created"));
             loadedUser.setUserFilepath(folder + File.separator + name);
 
+            switch((String)userJson.get("user_type")) {
+                case "premium":
+                    loadedUser.setUserType(User.UserType.PREMIUM);
+                    break;
+                case "admin":
+                    loadedUser.setUserType(User.UserType.ADMIN);
+                    break;
+                default:
+                    loadedUser.setUserType(User.UserType.NORMAL);
+                    break;
+            }
+
             b = new BufferedReader(new FileReader(new File(loadedUser.getUserFilepath() + File.separator + "transactions.txt")));
             loadedUser.setFunds(Double.parseDouble(b.readLine()));
             b.close();
@@ -124,6 +141,23 @@ public class BankProject {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private static ArrayList<String> getUIDs() {
+        ArrayList<String> uids = new ArrayList<String>();
+
+        try {
+            BufferedReader b = new BufferedReader(new FileReader(new File(folder + File.separator + "uids.txt")));
+            String uidRead;
+
+            while ((uidRead = b.readLine()) != null) {
+                uids.add(uidRead);
+            }
+            b.close();
+        } catch(IOException e) {
+            System.out.println(":(((");
+        }
+        return uids;
     }
 
     private static double moneyCheck(String deposit) {
@@ -163,14 +197,7 @@ public class BankProject {
         }
 
         try {
-            BufferedReader b = new BufferedReader(new FileReader(new File(folder + File.separator + "uids.txt")));
-            ArrayList<String> uids = new ArrayList<String>();
-            String uidRead;
-
-            while((uidRead = b.readLine()) != null) {
-                uids.add(uidRead);
-            }
-            b.close();
+            ArrayList<String> uids = getUIDs();
 
             while(uids.contains(cu.getUID())) {
                 cu.setUID(User.generateUID());
@@ -189,6 +216,7 @@ public class BankProject {
         userJson.put("email", cu.getEmail());
         userJson.put("uid", cu.getUID());
         userJson.put("user_created", cu.getCreated());
+        userJson.put("user_type", cu.getUserType().name().toLowerCase());
 
 
         File userDir = new File(folder + File.separator + cu.getUsername());
@@ -216,21 +244,35 @@ public class BankProject {
     }
     private static void removeUser(User cu) {
         File f = new File(cu.getUserFilepath());
-        try {
-            BufferedReader r = new BufferedReader(new FileReader(new File(folder + File.separator + "uids.txt")));
-            ArrayList<String> uids = new ArrayList<>();
-            String l;
-            while((l = r.readLine()) != null) {
-                uids.add(l);
-            }
-            System.out.println(r.lines());
-            r.close();
-        } catch(IOException e) {
-            System.out.println(":((");
-        }
-
-
+        removeUID(cu.getUID());
         removeDirectory(f);
+    }
+
+    private static void removeUser(File f) {
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(f + File.separator + "user.json"));
+            removeUID((String)((JSONObject)json.parse(br)).get("uid"));
+            br.close();
+            removeDirectory(f);
+        } catch(ParseException | IOException e) {
+            System.out.println(":(");
+        }
+    }
+
+    private static void removeUID(String uid) {
+        ArrayList<String> uids = getUIDs();
+        uids.remove(uid);
+        try {
+            BufferedWriter f = new BufferedWriter(new FileWriter(new File(folder + File.separator + "uids.txt")));
+            for(String s : uids) {
+                f.write(s + "\n");
+            }
+            f.flush();
+            f.close();
+        } catch(IOException e) {
+            System.out.println(":(((");
+        }
 
     }
 
@@ -287,7 +329,7 @@ public class BankProject {
                 passed = true;
                 for (File f : files){
                     if(getFileUser(f).equals(username)) {
-                        System.out.println("This username is taken!");
+                        System.out.println("This username is taken!"); //Todo: Change this to be a "do you want to log in?"
                         passed = false;
                         username = sc.nextLine();
                         break;
@@ -320,7 +362,7 @@ public class BankProject {
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
         String[] input = new String[1];
-        populateMap();
+        populateMap(User.UserType.NORMAL);
 
         while(isRunning) {
             System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
@@ -405,6 +447,7 @@ public class BankProject {
                             }
 
                             u = loadUser(login);
+                            populateMap(u.getUserType());
                         }
                     }
                     break;
@@ -437,6 +480,7 @@ public class BankProject {
                     cu.setUsername(username);
                     cu.setPwd(password);
                     cu.setFunds(0);
+                    cu.setUserType(User.UserType.NORMAL);
                     cu.setEmail("test@gmail.com");
                     cu.setCreated(String.valueOf(System.currentTimeMillis() / 1000L));
 
@@ -462,7 +506,7 @@ public class BankProject {
                     }
                     break;
                 case HOMEPAGE:
-                    System.out.println("Welcome back, " + u.getUsername());
+                    System.out.println("Welcome back, " + u.getUsername() + " [User Type: " + u.getUserType().name() + "]");
                     System.out.println("Current Balance: $" + String.format("%.2f", u.getFunds()));
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
@@ -607,6 +651,34 @@ public class BankProject {
                     }
                     input[0] = "0";
                     break;
+                case MASS_TERMINATION:
+                    System.out.println("Are you sure you want to mass terminate (remove all other accounts)?");
+                    menuPrint(Screen.CHOICE);
+                    input = checkInput(Screen.CHOICE, sc.nextLine());
+                    switch(input[0]) {
+                        case "1":
+                            for(File f : files) {
+                                if(f.isDirectory() && !f.getName().equals(u.getUsername())) {
+                                    System.out.println(f);
+                                    removeUser(f);
+                                }
+                            }
+                            try {
+                                BufferedWriter bw = new BufferedWriter(new FileWriter(new File(folder + File.separator + "uids.txt")));
+                                bw.write(u.getUID() + "\n");
+                                bw.flush();
+                                bw.close();
+                            } catch(IOException e) {
+                                System.out.println("Failed to write out UIDs!");
+                            }
+                            break;
+                        case "2":
+                            menuState = Screen.HOMEPAGE;
+                            break;
+                    }
+                    input[0] = "0";
+                    break;
+
             }
 
 
@@ -679,11 +751,28 @@ public class BankProject {
                 case OUTBOX:
                     break;
                 case SETTINGS:
-                    switch(input[0]) {
-                        case "1": //reset pwd
+                    switch(u.getUserType()) {
+                        case NORMAL:
+                        case PREMIUM:
+                            switch (input[0]) {
+                                case "1": //reset pwd
+                                    break;
+                                case "2":
+                                    menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                                    break;
+                            }
                             break;
-                        case "2":
-                            menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                        case ADMIN:
+                            switch (input[0]) {
+                                case "1": //reset pwd
+                                    break;
+                                case "2":
+                                    menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                                    break;
+                                case "3":
+                                    menuState = Screen.MASS_TERMINATION; //State Change: Settings -> Mass Termination (Admin)
+                                    break;
+                            }
                             break;
                     }
                     break;

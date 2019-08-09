@@ -13,14 +13,21 @@ import java.util.ArrayList;
 import static com.nathansbud.BConstants.*;
 
 public class User {
+    enum UserType {
+        NORMAL(),
+        PREMIUM(),
+        ADMIN()
+    }
+
     private String username;
     private String pwd;
     private String uid; //Int - 7
     private String email;
     private String created;
 
-    private double funds;
+    private UserType userType;
 
+    private double funds;
     private String userFilepath;
 
     public User() {
@@ -83,7 +90,6 @@ public class User {
         pwd = _pwd;
     }
 
-
     public static String generateUID() { //Todo: This doesn't actually check for collisions
         String s = Integer.toString((int)(Math.random()*9+1));
 
@@ -98,6 +104,20 @@ public class User {
     }
     public void setUID(String _uid) {
         uid = _uid;
+    }
+
+    public UserType getUserType() {
+        return userType;
+    }
+    public void setUserType(UserType _userType) {
+        userType = _userType;
+    }
+
+    public boolean isPremium() {
+        return isAdmin() || userType == UserType.PREMIUM;
+    }
+    public boolean isAdmin() {
+        return userType == UserType.ADMIN;
     }
 
     public String getCreated() {
