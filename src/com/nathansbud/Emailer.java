@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 
 public class Emailer {
@@ -60,6 +61,7 @@ public class Emailer {
         try {
             BufferedReader f = new BufferedReader(new FileReader(new File(jsonPath)));
             JSONObject creds = (JSONObject)json.parse(f);
+            f.close();
             email = (String)creds.get("email");
             password = (String)creds.get("password");
         } catch(ParseException | IOException e) {
@@ -90,5 +92,52 @@ public class Emailer {
             System.out.println("Something went wrong ya dork");
             e.printStackTrace();
         }
+    }
+
+    public void sendResetEmail(String email) {
+        if(exists(email)) {
+            new Thread(()->{
+                sendEmail("Password Reset", "Insert password reset instructions here!", email); //Todo: Make this multithreaded so that it's non-blocking!
+            }).start(); //Email send thread
+            System.out.println("Email sent!");
+        } else {
+            System.out.println("Email does not exist!");
+        }
+    }
+
+    public static boolean isValid(String email) {
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
+                "[a-zA-Z0-9_+&*-]+)*@" +
+                "(?:[a-zA-Z0-9-]+\\.)+[a-z" +
+                "A-Z]{2,7}$";
+
+        Pattern pat = Pattern.compile(emailRegex);
+
+        if (email == null) return false;
+        return pat.matcher(email).matches();
+    } //Stolen from https://www.geeksforgeeks.org/check-email-address-valid-not-java/
+    public static boolean exists(String email) {
+        return getAllEmails().contains(email);
+    }
+
+    public static ArrayList<String> getAllEmails() {
+        ArrayList<String> emails = new ArrayList<String>();
+        JSONParser json = new JSONParser();
+
+        for(File f : BankProject.getFiles()) {
+            if (f.isDirectory()) {
+                try {
+                    BufferedReader b = new BufferedReader(new FileReader(new File(f + File.separator + "user.json")));
+                    JSONObject userJson = (JSONObject)json.parse(b);
+                    b.close();
+                    if (userJson.containsKey("email")) {
+                        emails.add((String) userJson.get("email"));
+                    }
+                } catch (ParseException | IOException e) {
+                    System.out.println("Failed to read emails");
+                }
+            }
+        }
+        return emails;
     }
 }

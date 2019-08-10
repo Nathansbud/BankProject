@@ -21,9 +21,8 @@ import java.util.Map;
 
 /*--------------------------------------------*\
 Todo:
-    - Premium account/user designation
     - Email-related stuff
-    - UIDs
+    - Some form of interest accruing?
 
 \*--------------------------------------------*/
 
@@ -49,7 +48,8 @@ public class BankProject {
         START(1),
         LOGIN(2),
         CREATE(3),
-        FORGOT(4),
+        FORGOT_PASSWORD(4),
+
         HOMEPAGE(5),
         DEPOSIT(6),
         WITHDRAW(7),
@@ -59,7 +59,6 @@ public class BankProject {
         INBOX(11),
         OUTBOX(12),
         SETTINGS(15),
-
 
         TERMINATION(50),
         MASS_TERMINATION(999),
@@ -138,7 +137,7 @@ public class BankProject {
 
             return loadedUser;
         } catch(IOException | ParseException e) {
-            e.printStackTrace();
+            System.out.println("Failed to load user file!");
             return null;
         }
     }
@@ -340,6 +339,19 @@ public class BankProject {
         return username;
     }
 
+    private static String createEmail(String email) {
+        ArrayList<String> emails = Emailer.getAllEmails();
+
+        while(!Emailer.isValid(email) || emails.contains(email)) {
+            if(!Emailer.isValid(email)) System.out.println("Email is not valid!");
+            else System.out.println("Email already exists!");
+
+            email = sc.nextLine();
+        }
+
+        return email;
+    }
+
     private static String createPassword(String pass) {
         boolean passed = false;
         while(!passed) {
@@ -353,10 +365,13 @@ public class BankProject {
         return pass;
     }
 
+    public static File[] getFiles() {
+        return files;
+    }
+
     public static String getFileUser(File f) {
         return f.getName();
     }
-
 
     public static void main(String[] args) {
         System.out.println("Welcome to Nathansbank!");
@@ -447,19 +462,27 @@ public class BankProject {
                             }
 
                             u = loadUser(login);
-                            populateMap(u.getUserType());
+                            if (u != null) {
+                                populateMap(u.getUserType());
+                            } else {
+                                System.out.println("User load error! Returning to login screen...");
+                                menuState = Screen.START; //State Change: Login -> Start
+                            }
                         }
                     }
                     break;
                 }
+
                 //Todo: Make separate function
                 case CREATE: {
                     boolean passPassed = false;
 
                     System.out.println("Enter in a username: ");
-
-
                     String username = createUsername(sc.nextLine());
+
+                    System.out.println("Enter in an email: ");
+                    String email = createEmail(sc.nextLine());
+
                     String password = "";
 
                     System.out.println("Enter in a password: ");
@@ -469,7 +492,7 @@ public class BankProject {
                         if (sc.nextLine().equals(password)) {
                             passPassed = true;
                         } else {
-                            System.out.println("Password do not match...enter in a password");
+                            System.out.println("Passwords do not match...enter in a new password!");
                         }
                     }
 
@@ -479,31 +502,20 @@ public class BankProject {
 
                     cu.setUsername(username);
                     cu.setPwd(password);
+                    cu.setEmail(email);
+
                     cu.setFunds(0);
                     cu.setUserType(User.UserType.NORMAL);
-                    cu.setEmail("test@gmail.com");
                     cu.setCreated(String.valueOf(System.currentTimeMillis() / 1000L));
 
                     createUser(cu);
                     menuState = Screen.START; //State Change: Create -> Start
                     break;
                 }
-                case FORGOT:
-                    System.out.println("Please input your username!");
-                    String usr = sc.nextLine();
-                    boolean userExists = false;
-                    for (File f : files) {
-                        if(getFileUser(f).equals(usr)) {
-                            userExists = true;
-                            break;
-                        }
-                    }
-
-                    if(userExists) {
-                        System.out.println("Please input your email address: ");
-                    } else {
-                        System.out.println("This user does not exist!");
-                    }
+                case FORGOT_PASSWORD:
+                    System.out.println("If an email is found matching a registered user, password reset instructions will be sent! Please input your email: ");
+                    emailer.sendResetEmail(sc.nextLine());
+                    menuState = Screen.START; //State Change: Password Reset -> Start
                     break;
                 case HOMEPAGE:
                     System.out.println("Welcome back, " + u.getUsername() + " [User Type: " + u.getUserType().name() + "]");
@@ -643,10 +655,10 @@ public class BankProject {
                         case "1":
                             removeUser(u);
                             u = null;
-                            menuState = Screen.START;
+                            menuState = Screen.START; //State Change: Account Termination -> Start
                             break;
                         case "2":
-                            menuState = Screen.HOMEPAGE;
+                            menuState = Screen.HOMEPAGE; //State Change: Account Termination -> Homepage
                             break;
                     }
                     input[0] = "0";
@@ -673,7 +685,7 @@ public class BankProject {
                             }
                             break;
                         case "2":
-                            menuState = Screen.HOMEPAGE;
+                            menuState = Screen.HOMEPAGE; //State Change: Mass Termination -> Homepage
                             break;
                     }
                     input[0] = "0";
@@ -684,7 +696,7 @@ public class BankProject {
 
             switch(menuState) { //Todo: Merge this with ^
                 default:
-                    menuState = Screen.HOMEPAGE;
+                    menuState = Screen.HOMEPAGE; //State Change: Current Screen -> Homepage
                     break;
                 case QUIT:
                     break;
@@ -693,50 +705,50 @@ public class BankProject {
                         case "0":
                             break;
                         case "1": //login
-                            menuState = Screen.LOGIN;
+                            menuState = Screen.LOGIN; //State Change: Start -> Login
                             break;
                         case "2": //create account
-                            menuState = Screen.CREATE;
+                            menuState = Screen.CREATE; //State Change: Start -> Create
                             break;
                         case "3": //forgot password
-                            menuState = Screen.FORGOT;
+                            menuState = Screen.FORGOT_PASSWORD; //State Change: Start -> Forgot Password
                             break;
                         case "4":
-                            menuState = Screen.QUIT;
+                            menuState = Screen.QUIT; //State Change: Start -> Quit
                             break;
                     }
                     break;
                 case LOGIN:
-                    menuState = Screen.HOMEPAGE;
+                    menuState = Screen.HOMEPAGE; //State Change: Start -> Homepage
                     break;
-                case FORGOT:
-                    menuState = Screen.START;
+                case FORGOT_PASSWORD:
+                    menuState = Screen.START; //State Change: Forgot Password -> Start
                     break;
                 case HOMEPAGE:
                     switch(input[0]) {
                         case "0": //Nothing
                             break;
                         case "1": //Deposit
-                            menuState = Screen.DEPOSIT;
+                            menuState = Screen.DEPOSIT; //State Change: Homepage -> Deposit
                             break;
                         case "2": //Withdraw
-                            menuState = Screen.WITHDRAW;
+                            menuState = Screen.WITHDRAW; //State Change: Homepage -> Withdraw
                             break;
                         case "3": //Transfer
-                            menuState = Screen.TRANSFER;
+                            menuState = Screen.TRANSFER; //State Change: Homepage -> Transfer
                             break;
                         case "4": //History
-                            menuState = Screen.HISTORY;
+                            menuState = Screen.HISTORY; //State Change: Homepage -> History
                             break;
                         case "5": //Inbox
-                            menuState = Screen.MESSAGES;
+                            menuState = Screen.MESSAGES; //State Change: Homepage -> Messages
                             break;
                         case "6": //Settings
-                            menuState = Screen.SETTINGS;
+                            menuState = Screen.SETTINGS; //State Change: Homepage -> Settings
                             break;
                         case "7": //Log-Out
                             System.out.println("Logging out!");
-                            menuState = Screen.START;
+                            menuState = Screen.START; //State Change: Homepage -> Start
                             break;
                     }
                     break;
@@ -756,6 +768,7 @@ public class BankProject {
                         case PREMIUM:
                             switch (input[0]) {
                                 case "1": //reset pwd
+
                                     break;
                                 case "2":
                                     menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
@@ -779,10 +792,10 @@ public class BankProject {
                 case MESSAGES:
                     switch(input[0]) {
                         case "1":
-                            menuState = Screen.INBOX;
+                            menuState = Screen.INBOX; //State Change: Messages -> Inbox
                             break;
                         case "2":
-                            menuState = Screen.OUTBOX;
+                            menuState = Screen.OUTBOX; //State Change: Messages -> Outbox
                             break;
                     }
                     break;
