@@ -36,12 +36,11 @@ public class BankProject {
     private static Emailer emailer = new Emailer("creds"+File.separator+"email.json");
     private static JSONParser json = new JSONParser();
 
-    private static boolean isRunning = true;
+    private static boolean running = true;
     private static boolean debug = true;
 
 
     private enum Screen {
-
         //STATE SCREENS
 
         QUIT(0),
@@ -83,6 +82,11 @@ public class BankProject {
     private static Screen menuState = Screen.START;
     private static Map<Screen, String[]> menuLookup;
 
+    /**
+     * Debug method used to load in a specific user and state
+     * @param user Username of user to be loaded in
+     * @param state Screen state to set program to
+     */
     public static void debugSetup(String user, Screen state) {
         if(debug) {
             u = loadUser(user);
@@ -90,6 +94,10 @@ public class BankProject {
         }
     }
 
+    /**
+     * Method to establish all menu options for necessary screens
+     * @param userType Type of user to load menu options based off of
+     */
     private static void populateMap(User.UserType userType) {
         menuLookup = new HashMap<Screen, String[]>();
         menuLookup.put(Screen.CHOICE, new String[]{"Yes", "No"});
@@ -104,6 +112,13 @@ public class BankProject {
         }
     }
 
+    /**
+     * Method to load a user from their user.json file, given username as input.
+     *
+     * Parses the returned JSONObject to set the fields of the user to load, and loads in all funds from the user's transaction log if they exist
+     * @param name Username of user to load in
+     * @return User that was loaded in
+     */
     private static User loadUser(String name) {
         JSONParser json = new JSONParser();
         try {
@@ -116,6 +131,7 @@ public class BankProject {
             loadedUser.setUsername((String)userJson.get("username"));
             loadedUser.setPwd((String)userJson.get("password"));
             loadedUser.setUID((String)userJson.get("uid"));
+            loadedUser.setEmail((String)userJson.get("email"));
             loadedUser.setCreated((String)userJson.get("user_created"));
             loadedUser.setUserFilepath(folder + File.separator + name);
 
@@ -142,6 +158,10 @@ public class BankProject {
         }
     }
 
+    /**
+     * Method to get all active UIDs
+     * @return ArrayList of all current uids
+     */
     private static ArrayList<String> getUIDs() {
         ArrayList<String> uids = new ArrayList<String>();
 
@@ -159,6 +179,11 @@ public class BankProject {
         return uids;
     }
 
+    /**
+     * Checks to make sure that money amounts are valid before doing operations with them.
+     * @param deposit Money string being validated
+     * @return Validated money string as a double
+     */
     private static double moneyCheck(String deposit) {
         boolean depositPassed = false;
         double amount = -1;
@@ -183,6 +208,14 @@ public class BankProject {
         return amount;
     }
 
+
+    /**
+     * Creates a new user by making a new user directory, messages directory, user json file, and transaction log.
+     *
+     * Reads in to make sure that the user being added is valid, then generates a validated UID and writes it out to UID file.
+     * A user JSONObject is created, all necessary tags are set based on passed-in user ({@param cu}), and ({@link com.nathansbud.BankProject#files} is updated with new directory.
+     * @param cu User to create
+     */
     @SuppressWarnings("unchecked") private static void createUser(User cu) {
         JSONObject userJson = new JSONObject();
 
@@ -241,14 +274,25 @@ public class BankProject {
 
         files = folder.listFiles();
     }
+
+    /**
+     * Removes the user directory associated with {@param cu}, as well as associated UID.
+     * Updates {@link com.nathansbud.BankProject#files} after finishing, to reflect removed user
+     * @param cu User to remove
+     */
     private static void removeUser(User cu) {
         File f = new File(cu.getUserFilepath());
         removeUID(cu.getUID());
         removeDirectory(f);
+        files = folder.listFiles();
     }
 
+    /**
+     * Reads in user directory, and removes user UID and recursively deletes all files in the directory.
+     * Updates {@link com.nathansbud.BankProject#files} after finishing, to reflect removed user
+     * @param f User directory to remove
+     */
     private static void removeUser(File f) {
-
         try {
             BufferedReader br = new BufferedReader(new FileReader(f + File.separator + "user.json"));
             removeUID((String)((JSONObject)json.parse(br)).get("uid"));
@@ -257,8 +301,13 @@ public class BankProject {
         } catch(ParseException | IOException e) {
             System.out.println(":(");
         }
+        files = folder.listFiles();
     }
 
+    /**
+     * Method to remove UID from uids file. Reads in UIDs from {@link BankProject#getUIDs()}, and deletes specified
+     * @param uid User ID to remove
+     */
     private static void removeUID(String uid) {
         ArrayList<String> uids = getUIDs();
         uids.remove(uid);
@@ -275,6 +324,10 @@ public class BankProject {
 
     }
 
+    /**
+     * Method to recursively remove all files in a directory
+     * @param dir Directory to remove
+     */
     private static void removeDirectory(File dir) {
         if(dir.isDirectory()) {
             for(File f : dir.listFiles()) {
@@ -284,6 +337,11 @@ public class BankProject {
         dir.delete();
     }
 
+    /**
+     * Method to print out the menu options for a given screen using {@link com.nathansbud.BankProject#menuLookup}.
+     * No validation is done to ensure that current screen state has available options
+     * @param menu Desired screen state
+     */
     private static void menuPrint(Screen menu) {
         for (int i = 0; i < menuLookup.get(menu).length; i++) {
             System.out.println((i+1) + ". " + menuLookup.get(menu)[i]);
@@ -291,6 +349,12 @@ public class BankProject {
         }
     }
 
+    /**
+     * Method to validate user input against the option set provided from {@link com.nathansbud.BankProject#menuLookup}
+     * @param state Screen state used as argument for {@link com.nathansbud.BankProject#menuLookup}
+     * @param input User input string
+     * @return The validated user input
+     */
     private static String[] checkInput(Screen state, String input) {
         String arguments[] = new String[3];
         boolean passed = false;
@@ -314,10 +378,21 @@ public class BankProject {
         return arguments;
     }
 
+
+    /**
+     * Overloaded {@link com.nathansbud.BankProject#checkInput(Screen, String)} to validate screen input assuming that options are from current screen
+     * @param input User input for option choice
+     * @return The validated user input
+     */
     private static String[] checkInput(String input) {
         return checkInput(menuState, input);
     }
 
+    /**
+     * Username validator before setting it
+     * @param username Username to validate
+     * @return The created username, adhering to all email rules
+     */
     private static String createUsername(String username) {
         boolean passed = false;
         while(!passed) {
@@ -339,6 +414,11 @@ public class BankProject {
         return username;
     }
 
+    /**
+     * Create email checks to see if an email exists or is invalid before creating it
+     * @param email Email to validate
+     * @return The created email, adhering to all email rules
+     */
     private static String createEmail(String email) {
         ArrayList<String> emails = Emailer.getAllEmails();
 
@@ -352,6 +432,11 @@ public class BankProject {
         return email;
     }
 
+    /**
+     * Create password is used on account creation go validate a password before creating it
+     * @param pass Password to validate
+     * @return The created user password, adhering to all password limits
+     */
     private static String createPassword(String pass) {
         boolean passed = false;
         while(!passed) {
@@ -365,21 +450,35 @@ public class BankProject {
         return pass;
     }
 
+
+    /**
+     * Getter for user files
+     * @return All created account directories
+     */
     public static File[] getFiles() {
         return files;
     }
 
+    /**
+     * Get file user returns the username of an associated directory
+     * @param f User directory, as given inside the data folder
+     * @return The associated file user for a directory
+     */
     public static String getFileUser(File f) {
         return f.getName();
     }
 
+    /**
+     * The main function is used for the bank loop (user account and actions)
+     * @param args
+     */
     public static void main(String[] args) {
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
         String[] input = new String[1];
         populateMap(User.UserType.NORMAL);
 
-        while(isRunning) {
+        while(running) {
             System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
             input[0] = "0";
 
