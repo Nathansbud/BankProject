@@ -4,8 +4,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import static com.nathansbud.BConstants.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.File;
@@ -15,8 +13,10 @@ import java.io.BufferedWriter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
 import java.util.Map;
+import java.util.Scanner;
+
+import static com.nathansbud.BConstants.*;
 
 
 /*--------------------------------------------*\
@@ -106,9 +106,9 @@ public class BankProject {
         menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Log Out"}); //6, 7, 8, 9, 10, 11, 12
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
         if(userType != User.UserType.ADMIN) {
-            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account"});
+            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Back to Menu"});
         } else {
-            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All"});
+            menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All", "Back to Menu"});
         }
     }
 
@@ -305,7 +305,7 @@ public class BankProject {
     }
 
     /**
-     * Method to remove UID from uids file. Reads in UIDs from {@link BankProject#getUIDs()}, and deletes specified
+     * Method to remove UID from uids file. Reads in UIDs from {@link com.nathansbud.BankProject#getUIDs()}, and deletes specified
      * @param uid User ID to remove
      */
     private static void removeUID(String uid) {
@@ -478,6 +478,12 @@ public class BankProject {
         String[] input = new String[1];
         populateMap(User.UserType.NORMAL);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            if(u.getUsername() != null) {
+                u.recordLogin(false);
+            }
+        }));
+
         while(running) {
             System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
             input[0] = "0";
@@ -563,6 +569,7 @@ public class BankProject {
                             u = loadUser(login);
                             if (u != null) {
                                 populateMap(u.getUserType());
+                                u.recordLogin(true);
                             } else {
                                 System.out.println("User load error! Returning to login screen...");
                                 menuState = Screen.START; //State Change: Login -> Start
@@ -595,6 +602,23 @@ public class BankProject {
                         }
                     }
 
+                    System.out.println("Would you like to register for a premium account?");
+
+                    String accountType = "normal";
+
+                    menuPrint(Screen.CHOICE);
+                    input = checkInput(Screen.CHOICE, sc.nextLine());
+
+                    switch(input[0]) {
+                        case "1":
+                            accountType = "premium";
+                            break;
+                        case "2":
+                            accountType = "normal";
+                            break;
+                    }
+                    input[0] = "0";
+
                     System.out.println("User created! Try logging in!");
 
                     User cu = new User();
@@ -602,9 +626,8 @@ public class BankProject {
                     cu.setUsername(username);
                     cu.setPwd(password);
                     cu.setEmail(email);
-
                     cu.setFunds(0);
-                    cu.setUserType(User.UserType.NORMAL);
+                    cu.setUserType(accountType);
                     cu.setCreated(String.valueOf(System.currentTimeMillis() / 1000L));
 
                     createUser(cu);
@@ -653,12 +676,20 @@ public class BankProject {
                     String[] s = u.getHistory();
                     double ct = 0;
 
-                    for(int i = 0; i < s.length; i++) {
-                        System.out.print((i + 1) + ": ");
-
+                    for(int i = 0, count=1; i < s.length; i++) {
                         boolean transferred = false;
                         boolean received = false;
-                        double change = Double.parseDouble(s[i].substring(2, (s[i].lastIndexOf(":") > 2) ? (s[i].lastIndexOf(":")) : (s[i].length())));
+
+                        switch(s[i].charAt(0)) {
+                            case 'O':
+                                continue;
+                            case 'C':
+                                continue;
+                        }
+
+                        System.out.print((count++) + ": ");
+                        String[] parts = s[i].split(":");
+                        double change = Double.parseDouble(parts[1]);
 
                         /*
                         ACTION CODES:
@@ -847,6 +878,7 @@ public class BankProject {
                             break;
                         case "7": //Log-Out
                             System.out.println("Logging out!");
+                            u.recordLogin(false);
                             menuState = Screen.START; //State Change: Homepage -> Start
                             break;
                     }
@@ -862,27 +894,27 @@ public class BankProject {
                 case OUTBOX:
                     break;
                 case SETTINGS:
-                    switch(u.getUserType()) {
-                        case NORMAL:
-                        case PREMIUM:
-                            switch (input[0]) {
-                                case "1": //reset pwd
-
+                    switch(input[0]) {
+                        case "1":
+                            break;
+                        case "2":
+                            menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                            break;
+                        case "3":
+                            switch(u.getUserType()) {
+                                case NORMAL:
+                                case PREMIUM:
+                                    menuState = Screen.HOMEPAGE; //State Change: Settings -> Homepage
                                     break;
-                                case "2":
-                                    menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
+                                case ADMIN:
+                                    menuState = Screen.MASS_TERMINATION; //State Change: Settings -> Mass Termination (Admin)
                                     break;
                             }
                             break;
-                        case ADMIN:
-                            switch (input[0]) {
-                                case "1": //reset pwd
-                                    break;
-                                case "2":
-                                    menuState = Screen.TERMINATION; //State Change: Settings -> Account Termination
-                                    break;
-                                case "3":
-                                    menuState = Screen.MASS_TERMINATION; //State Change: Settings -> Mass Termination (Admin)
+                        case "4":
+                            switch(u.getUserType()) {
+                                case ADMIN:
+                                    menuState = Screen.HOMEPAGE; //State Change: Settings -> Homepage
                                     break;
                             }
                             break;

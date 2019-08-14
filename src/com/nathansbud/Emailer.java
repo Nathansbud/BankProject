@@ -117,7 +117,9 @@ public class Emailer {
         return pat.matcher(email).matches();
     } //Stolen from https://www.geeksforgeeks.org/check-email-address-valid-not-java/
     public static boolean exists(String email) {
-        return getAllEmails().contains(email);
+
+        boolean c =  getAllEmails().contains(email);
+        return c;
     }
 
     public static ArrayList<String> getAllEmails() {
@@ -127,7 +129,7 @@ public class Emailer {
         for(File f : BankProject.getFiles()) {
             if (f.isDirectory()) {
                 try {
-                    BufferedReader b = new BufferedReader(new FileReader(new File(f + File.separator + "user.json")));
+                    BufferedReader b = new BufferedReader(new FileReader(new File(f.getPath() + File.separator + "user.json")));
                     JSONObject userJson = (JSONObject)json.parse(b);
                     b.close();
                     if (userJson.containsKey("email")) {

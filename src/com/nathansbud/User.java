@@ -53,7 +53,6 @@ public class User {
 
     public String[] getHistory() {
         ArrayList<String> history = new ArrayList<>();
-        System.out.println(userFilepath);
 
         try {
             BufferedReader b = new BufferedReader(new FileReader(userFilepath + File.separator + "transactions.txt"));
@@ -113,6 +112,20 @@ public class User {
         userType = _userType;
     }
 
+    public void setUserType(String ut) {
+        switch(ut.toLowerCase()) {
+            case "normal":
+                userType = UserType.NORMAL;
+                break;
+            case "premium":
+                userType = UserType.PREMIUM;
+                break;
+            case "admin":
+                userType = UserType.ADMIN;
+                break;
+        }
+    }
+
     public boolean isPremium() {
         return isAdmin() || userType == UserType.PREMIUM;
     }
@@ -127,6 +140,16 @@ public class User {
         created = _created;
     }
 
+    public void recordLogin(boolean login) {
+        try {
+            BufferedWriter b = new BufferedWriter(new FileWriter(new File( "data" + File.separator + username + File.separator + "transactions.txt"), true));
+            b.write(((login)?("O:"):("C:"))+(System.currentTimeMillis()/1000L)+"\n");
+            b.close();
+        } catch(IOException e) {
+            System.out.println("Big sad");
+        }
+
+    }
     public void rewriteFunds(double amount, int type, String user) {
         String actionString;
         String send = user;
@@ -143,6 +166,8 @@ public class User {
         }  else {
             actionString = "ERROR";
         }
+
+        actionString += ":" + (System.currentTimeMillis() / 1000L);
 
 
         String selfPath = "data" + File.separator + user + File.separator + "transactions.txt";
