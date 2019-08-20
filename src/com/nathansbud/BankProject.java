@@ -11,10 +11,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Date;
 
 import static com.nathansbud.BConstants.*;
 
@@ -39,6 +41,9 @@ public class BankProject {
     private static boolean running = true;
     private static boolean debug = true;
 
+    private static String[] input = new String[1];
+
+
 
     private enum Screen {
         //STATE SCREENS
@@ -58,6 +63,7 @@ public class BankProject {
         INBOX(11),
         OUTBOX(12),
         SETTINGS(15),
+        FEEDBACK(155),
 
         TERMINATION(50),
         MASS_TERMINATION(999),
@@ -103,11 +109,14 @@ public class BankProject {
         menuLookup.put(Screen.CHOICE, new String[]{"Yes", "No"});
         menuLookup.put(Screen.START, new String[]{"Login", "Create Account", "Forgot Password", "Quit"});
         menuLookup.put(Screen.CREATE, new String[]{});
-        menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Log Out"}); //6, 7, 8, 9, 10, 11, 12
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
         if(userType != User.UserType.ADMIN) {
+            menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Leave Feedback", "Log Out"});
+
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Back to Menu"});
         } else {
+            menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "See Feedback", "Log Out"});
+
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All", "Back to Menu"});
         }
     }
@@ -213,7 +222,7 @@ public class BankProject {
      * Creates a new user by making a new user directory, messages directory, user json file, and transaction log.
      *
      * Reads in to make sure that the user being added is valid, then generates a validated UID and writes it out to UID file.
-     * A user JSONObject is created, all necessary tags are set based on passed-in user ({@param cu}), and ({@link com.nathansbud.BankProject#files} is updated with new directory.
+     * A user JSONObject is created, all necessary tags are set based on passed-in user {@link com.nathansbud.BankProject#files} is updated with new directory.
      * @param cu User to create
      */
     @SuppressWarnings("unchecked") private static void createUser(User cu) {
@@ -403,10 +412,20 @@ public class BankProject {
                 passed = true;
                 for (File f : files){
                     if(getFileUser(f).equals(username)) {
-                        System.out.println("This username is taken!"); //Todo: Change this to be a "do you want to log in?"
+                        //Start Author: Prithvi
+                        System.out.println("This username is taken! Would you like to login?"); //Todo: Change this to be a "do you want to log in?"
+                        menuPrint(Screen.CHOICE);
+                        input = checkInput(Screen.CHOICE, sc.nextLine());
+                        switch(input[0]) {
+                            case "1":
+                                menuState = Screen.LOGIN;
+                                input[0] = "0";
+                                return "";
+                        }
                         passed = false;
                         username = sc.nextLine();
                         break;
+                        //End Author: Prithvi
                     }
                 }
             }
@@ -475,7 +494,6 @@ public class BankProject {
     public static void main(String[] args) {
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
-        String[] input = new String[1];
         populateMap(User.UserType.NORMAL);
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
@@ -585,6 +603,7 @@ public class BankProject {
 
                     System.out.println("Enter in a username: ");
                     String username = createUsername(sc.nextLine());
+                    if(menuState == Screen.LOGIN) continue;
 
                     System.out.println("Enter in an email: ");
                     String email = createEmail(sc.nextLine());
@@ -777,6 +796,43 @@ public class BankProject {
                     menuPrint(menuState);
                     input = checkInput(sc.nextLine());
                     break;
+                //Start Author: Prithvi
+                case FEEDBACK:
+                    if(!u.isAdmin()) {
+                        System.out.println("Please enter feedback: ");
+                        String feedback = sc.nextLine();
+                        try {
+                            BufferedWriter b = new BufferedWriter(new FileWriter(new File(folder + File.separator + "feedback.txt"), true));
+                            b.write(feedback + ":" + u.getUsername() + ":" + System.currentTimeMillis() / 1000L + "\n");
+                            b.close();
+                        } catch (IOException e) {
+                            System.out.println(":(((");
+                        }
+                    } else {
+                        try {
+                            BufferedReader b = new BufferedReader(new FileReader(new File(folder + File.separator + "feedback.txt")));
+                            String l;
+                            while((l = b.readLine()) != null) {
+                                String[] parts = l.split(":");
+                                int readTo = 0;
+
+                                for(int i = l.length() - 1, counter = 0; i >= 0; i--) {
+                                    if(l.charAt(i) == ':') counter++;
+                                    if(counter == 2) {
+                                        readTo = i;
+                                        break;
+                                    }
+                                }
+
+                                System.out.println(parts[parts.length - 2] + " [" +  Instant.ofEpochSecond(Long.valueOf(parts[parts.length - 1]))+ "]: " + l.substring(0, readTo));
+                            }
+                        } catch(IOException e) {
+                            System.out.println("Failed to find user feedback file!");
+
+                        }
+                    }
+                    break;
+                //End Author: Prithvi
                 case TERMINATION:
                     System.out.println("Are you sure you want to terminate your account?");
                     menuPrint(Screen.CHOICE);
@@ -876,7 +932,10 @@ public class BankProject {
                         case "6": //Settings
                             menuState = Screen.SETTINGS; //State Change: Homepage -> Settings
                             break;
-                        case "7": //Log-Out
+                        case "7": //Feedback
+                            menuState = Screen.FEEDBACK;
+                            break;
+                        case "8": //Log-Out
                             System.out.println("Logging out!");
                             u.recordLogin(false);
                             menuState = Screen.START; //State Change: Homepage -> Start
