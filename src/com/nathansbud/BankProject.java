@@ -34,15 +34,14 @@ public class BankProject {
     private static File[] files = folder.listFiles();
 
     private static User u = new User();
-    private static Emailer emailer = new Emailer("creds"+File.separator+"email.json");
+    private static Emailer emailer;
     private static JSONParser json = new JSONParser();
 
     private static boolean running = true;
     private static boolean debug = true;
+    private static boolean emailEnabled = false;
 
     private static String[] input = new String[1];
-
-
 
     private enum Screen {
         //STATE SCREENS
@@ -111,11 +110,9 @@ public class BankProject {
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
         if(userType != User.UserType.ADMIN) {
             menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Leave Feedback", "Log Out"});
-
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Back to Menu"});
         } else {
             menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "See Feedback", "Log Out"});
-
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All", "Back to Menu"});
         }
     }
@@ -491,10 +488,12 @@ public class BankProject {
      * @param args
      */
     public static void main(String[] args) {
+        if(emailEnabled) emailer = new Emailer("creds"+File.separator+"email.json");
         System.out.println("Welcome to Nathansbank!");
         System.out.println("What would you like to do today?");
         populateMap(User.UserType.NORMAL);
 
+        //Used to make sure that user correctly records logout when program terminates
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             if(u.getUsername() != null) {
                 u.recordLogin(false);
@@ -502,7 +501,7 @@ public class BankProject {
         }));
 
         while(running) {
-            System.out.println("Menu State: " + menuState.getCode() + " ("  + menuState + ")");
+            System.out.println("["  + menuState + "]");
             input[0] = "0";
 
             switch(menuState) {
@@ -653,8 +652,12 @@ public class BankProject {
                     break;
                 }
                 case FORGOT_PASSWORD:
-                    System.out.println("If an email is found matching a registered user, password reset instructions will be sent! Please input your email: ");
-                    emailer.sendResetEmail(sc.nextLine());
+                    if(emailEnabled) {
+                        System.out.println("If an email is found matching a registered user, password reset instructions will be sent! Please input your email: ");
+                        emailer.sendResetEmail(sc.nextLine());
+                    } else {
+                        System.out.println("Password resetting is not currently available! Returning to menu...");
+                    }
                     menuState = Screen.START; //State Change: Password Reset -> Start
                     break;
                 case HOMEPAGE:
@@ -672,10 +675,8 @@ public class BankProject {
                         System.out.println("Returning to user page...");
                     } else {
                         if(menuState == Screen.DEPOSIT) {
-//                          Transaction t = new Transaction("#", u.getUsername(), amount, String.valueOf(System.currentTimeMillis() / 1000L));
                             u.depositFunds(amount);
                         } else {
-//                          Transaction t = new Transaction(u.getUsername(), "#", amount, String.valueOf(System.currentTimeMillis() / 1000L));
                             u.withdrawFunds(amount);
                         }
                         System.out.println("$" + String.format("%.2f", amount) + " has been"+((menuState == Screen.DEPOSIT)? (" added to ") : (" removed from ")) + "your account! Your total is now $" + String.format("%.2f", u.getFunds()));

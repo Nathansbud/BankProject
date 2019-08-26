@@ -38,6 +38,10 @@ public class User {
     private double funds;
     private String userFilepath;
 
+
+    /**
+     * Empty user constructor used when populating user fields from file, or creating test users
+     */
     public User() {
         uid = generateUID();
     }
@@ -47,7 +51,6 @@ public class User {
         pwd = _pwd;
         uid = generateUID();
         email = _email;
-
         funds = _funds;
     }
 
@@ -59,6 +62,10 @@ public class User {
         email = _email;
     }
 
+    /**
+     * Get history creates a log of all user transactions (including login/log-outs) to iterate over.
+     * @return All entries in the user transactions file
+     */
     public String[] getHistory() {
         ArrayList<String> history = new ArrayList<>();
 
@@ -83,21 +90,39 @@ public class User {
         return h;
     }
 
+    /**
+     * @return Username
+     */
     public String getUsername() {
         return username;
     }
+
+    /**
+     * @param _username Username to set
+     */
     public void setUsername(String _username) {
         username = _username;
     }
 
+    /**
+     * @return User password
+     */
     public String getPwd() {
         return pwd;
     }
+
+    /**
+     * @param _pwd Password to set
+     */
     public void setPwd(String _pwd) {
         pwd = _pwd;
     }
 
-    public static String generateUID() { //Todo: This doesn't actually check for collisions
+    /**
+     * Generate UID generates a 10-digit UID by generating a random non-zero start integer, then populating the rest of the digits
+     * @return Generated UID
+     */
+    public static String generateUID() { //Todo: This doesn't actually check for collisions, also is a stupid way to do this LUL
         String s = Integer.toString((int)(Math.random()*9+1));
 
         for(int i = 1; i < UID_LENGTH; i++) {
@@ -106,20 +131,36 @@ public class User {
 
         return s;
     }
+
+    /**
+     * @return User ID
+     */
     public String getUID() {
         return uid;
     }
+    /**
+     * @param _uid User ID to set
+     */
     public void setUID(String _uid) {
         uid = _uid;
     }
 
+    /**
+     * @return User type of current user
+     */
     public UserType getUserType() {
         return userType;
     }
+    /**
+     * @param _userType User type to set
+     */
     public void setUserType(UserType _userType) {
         userType = _userType;
     }
 
+    /**
+     * @param ut String value of user type to set
+     */
     public void setUserType(String ut) {
         switch(ut.toLowerCase()) {
             case "normal":
@@ -134,20 +175,39 @@ public class User {
         }
     }
 
+    /**
+     * @return User premium status
+     */
     public boolean isPremium() {
         return isAdmin() || userType == UserType.PREMIUM;
     }
+
+    /**
+     * @return User admin status
+     */
     public boolean isAdmin() {
         return userType == UserType.ADMIN;
     }
 
+    /**
+     * @return User creation timestamp
+     */
     public String getCreated() {
         return created;
     }
+
+    /**
+     * @param _created Set timestamp of user creation
+     */
     public void setCreated(String _created) {
         created = _created;
     }
 
+    /**
+     * Function is called when user logs in or out, as a means to log the operations in the transaction log.
+     * If a login occurs, interest is also granted via {@link User#depositInterest()}.
+     * @param login Boolean to log whether operation is a login or logout operation
+     */
     public void recordLogin(boolean login) {
         try {
             BufferedWriter b = new BufferedWriter(new FileWriter(new File( "data" + File.separator + username + File.separator + "transactions.txt"), true));
@@ -158,6 +218,16 @@ public class User {
         }
         if(login) depositInterest();
     }
+
+    /**
+     * Rewrite funds is used to update user transaction files on any monetary operation, adding entries to the log.
+     *
+     * Function checks transaction type to determine necessary action string to input, then rewrites all lines as necessary.
+     * If a transfer operation occurs, trivial recursion is used to call the function again with the correct transfer user.
+     * @param amount Amount of funds to add/subtract
+     * @param type Transaction type (Deposit, Withdraw, Interest, Transfer, Receive)
+     * @param user Username of currently affected user, for user file (relevant in transfer operations)
+     */
     public void rewriteFunds(double amount, TransactionType type, String user) {
         String actionString;
         String send = user;
@@ -223,11 +293,21 @@ public class User {
         }
     }
 
+    /**
+     * Used to update user funds with new deposit amount, and rewrite transaction file
+     * @param deposit Amount to add to account
+     */
     public void depositFunds(double deposit) {
         funds += deposit;
         rewriteFunds(deposit, TransactionType.DEPOSIT, username);
     }
 
+    /**
+     * Function called on login, used to update user account balance on login with interest rate.
+     *
+     * Checks history by indexing backwards through ArrayList from {@link User#getHistory()} to find last log-in and logout.
+     * Uses compound interest formula (P(e)^rt) by finding the time difference between the two, and using user's interest rate (6% for normal user, 12% for premium), then updates funds
+     */
     public void depositInterest() {
         String[] history = getHistory();
         long ts = 0;
@@ -251,19 +331,31 @@ public class User {
             if (lit > lot) ts = lit - lot;
             else ts = System.currentTimeMillis() / 1000L - lot;
 
-            double newAmount = funds * Math.pow(Math.E, ts / 31557600D * ((userType == UserType.NORMAL) ? (0.06) : (0.12)));
+            double newAmount = funds * Math.pow(Math.E, ts / 31557600D * ((userType == UserType.NORMAL) ? (NORMAL_INTEREST_RATE) : (PREMIUM_INTEREST_RATE)));
             newAmount = newAmount*100/100.0 - funds;
             funds += newAmount;
             rewriteFunds(newAmount, TransactionType.INTEREST, username);
         }
     }
 
+    /**
+     * Withdraws an amount of funds from the user's current amount balance, {@link com.nathansbud.User#funds}
+     * @param withdraw Amount of funds to withdraw
+     * @return Withdrawn amount
+     */
     public double withdrawFunds(double withdraw) {
         funds -= withdraw;
         rewriteFunds(withdraw, TransactionType.WITHDRAWAL, username);
 
         return withdraw;
     }
+
+    /**
+     * Transfer funds is used to send funds between two users. Checks to make sure recipient exists, otherwise will exit the transaction!
+     *
+     * @param transfer Amount to funds to be transferred; can be greater than current account balance
+     * @param user Username of user to transfer funds
+     */
     public void transferFunds(double transfer, String user) {
         File f = new File("data" + File.separator + user + File.separator + "transactions.txt");
         if(f.exists()) {
@@ -275,28 +367,54 @@ public class User {
         }
     }
 
+    /**
+     * @return User account balance
+     */
     public double getFunds() {
         return funds;
     }
+
+    /**
+     * @param _funds Funds to set
+     */
     public void setFunds(double _funds) {
         funds = _funds;
     }
-    
+
+    /**
+     * @return User filepath
+     */
     public String getUserFilepath() {
         return userFilepath;
     }
+    /**
+     * @param _userFilepath Filepath of to set
+     */
     public void setUserFilepath(String _userFilepath) {
         userFilepath = _userFilepath;
     }
 
+    /**
+     * @return User email
+     */
     public String getEmail() {
         return email;
     }
+
+    /**
+     * @param _email Email to set
+     */
     public void setEmail(String _email) {
         email = _email;
     }
 
-    //Static method because potential system messages; "BankProject" no-reply messages or something, idk...maybe shouldn't be static
+    /**
+     * Method used to send messages between users
+     * @param subject Subject of the message sent
+     * @param sender Username of the sending user; by default is set to current logged-in user, but can be used for system messages
+     * @param recipient Username of recipient
+     * @param body Message content
+     */
     public static void sendMessage(String subject, String sender, String recipient, String body) {
         File toPath = new File("data" + File.separator + recipient);
         File fromPath = new File("data" + File.separator + sender);

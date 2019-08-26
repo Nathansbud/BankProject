@@ -42,6 +42,12 @@ public class Emailer {
         loadCredentials(jsonPath);
     }
 
+    /**
+     * Get valid InternetAddress for each email
+     * 
+     * @param emails List of emails to contact
+     * @return Set of email addresses cast to InternetAddress
+     */
     public InternetAddress[] makeAddresses(String[] emails) {
         ArrayList<InternetAddress> addresses = new ArrayList<InternetAddress>();
         for(int i = 0; i < emails.length; i++) {
@@ -55,6 +61,11 @@ public class Emailer {
     }
 
 
+    /**
+     * Loads in email credentials in order to use address for contacting users
+     *
+     * @param jsonPath Path to email credentials
+     */
     public void loadCredentials(String jsonPath) {
         JSONParser json = new JSONParser();
         try {
@@ -70,6 +81,13 @@ public class Emailer {
 
     }
 
+    /**
+     * Sends an email to user in order to eventually send password reset information
+     *
+     * @param subject Email subject
+     * @param body Email content
+     * @param recipients Email recipients
+     */
     public void sendEmail(String subject, String body, String... recipients) {
         Properties props = System.getProperties();
         props.put("mail.smtp.host", host);
@@ -93,6 +111,11 @@ public class Emailer {
         }
     }
 
+    /**
+     * Checks if an email exists, and emails if it does
+     *
+     * @param email Email to send password reset instructions to
+     */
     public void sendResetEmail(String email) {
         if(exists(email)) {
             new Thread(()->{
@@ -104,6 +127,11 @@ public class Emailer {
         }
     }
 
+    /**
+     * Uses an email regex checker to make sure an email could be valid
+     * @param email Email to check
+     * @return Whether or not an email address is valid
+     */
     public static boolean isValid(String email) {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
                 "[a-zA-Z0-9_+&*-]+)*@" +
@@ -119,6 +147,10 @@ public class Emailer {
         return getAllEmails().contains(email);
     }
 
+    /**
+     * Method checks all current user json files to find currently registered emails, in order to see if an email can be emailed when password forgotten option is selected.
+     * @return All user email addresses
+     */
     public static ArrayList<String> getAllEmails() {
         ArrayList<String> emails = new ArrayList<String>();
         JSONParser json = new JSONParser();
