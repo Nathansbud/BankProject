@@ -19,6 +19,14 @@ public class User {
         ADMIN()
     }
 
+    enum TransactionType {
+        DEPOSIT,
+        WITHDRAWAL,
+        INTEREST,
+        TRANSFER,
+        RECEIVE
+    }
+
     private String username;
     private String pwd;
     private String uid; //Int - 7
@@ -148,23 +156,32 @@ public class User {
         } catch(IOException e) {
             System.out.println("Big sad");
         }
-
+        if(login) depositInterest();
     }
-    public void rewriteFunds(double amount, int type, String user) {
+    public void rewriteFunds(double amount, TransactionType type, String user) {
         String actionString;
         String send = user;
 
-        if(type == 0) {
-            actionString = "D:" + amount;
-        } else if(type == 1) {
-            actionString = "W:" + amount;
-        } else if(type == 2) {
-            actionString = "T:" + amount + ":" + user;
-            user = username;
-        } else if(type == 3) {
-            actionString = "R:" + amount + ":" + username;
-        }  else {
-            actionString = "ERROR";
+        switch(type) {
+            case DEPOSIT:
+                actionString = "D:" + amount;
+                break;
+            case WITHDRAWAL:
+                actionString = "W:" + amount;
+                break;
+            case TRANSFER:
+                actionString = "T:" + amount + ":" + user;
+                user = username;
+                break;
+            case RECEIVE:
+                actionString = "R:" + amount + ":" + username;
+                break;
+            case INTEREST:
+                actionString = "I:" + amount;
+                break;
+            default:
+                actionString = "ERROR";
+                break;
         }
 
         actionString += ":" + (System.currentTimeMillis() / 1000L);
@@ -180,9 +197,9 @@ public class User {
             String line;
             int indexer = 0;
             while ((line = b.readLine()) != null) {
-                if(indexer == BALANCE_LOC && type != 3) {
+                if(indexer == BALANCE_LOC && type != TransactionType.RECEIVE) {
                     w.println(funds);
-                } else if(type == 3 && indexer == BALANCE_LOC) {
+                } else if(type == TransactionType.RECEIVE && indexer == BALANCE_LOC) {
                     w.println(Double.parseDouble(line)+amount);
                 } else {
                     w.println(line);
@@ -198,20 +215,52 @@ public class User {
 
             re.renameTo(old); //Todo: Figure out how to handle this bool?
 
-            if(type == 2) {
-                rewriteFunds(amount, 3, send); //This is good recursion, yes? Maybe?
+            if(type == TransactionType.TRANSFER) {
+                rewriteFunds(amount, TransactionType.RECEIVE, send); //This is good recursion, yes? Maybe?
             }
         } catch(IOException e) {
             System.out.println("Fund Writing Fail");
         }
     }
+
     public void depositFunds(double deposit) {
         funds += deposit;
-        rewriteFunds(deposit, 0, username);
+        rewriteFunds(deposit, TransactionType.DEPOSIT, username);
     }
+
+    public void depositInterest() {
+        String[] history = getHistory();
+        long ts = 0;
+
+        String lastLogout = "";
+        String lastLogin = "";
+
+        for (int i = history.length - 1; i >= 0; i--) {
+            if (lastLogout.equals("") && history[i].startsWith("C")) lastLogout = history[i];
+            if (lastLogin.equals("") && history[i].startsWith("O")) lastLogin = history[i];
+            if (!lastLogout.equals("") && !lastLogin.equals("")) break;
+        }
+
+        if (!lastLogin.equals("") && !lastLogout.equals("")) {
+            String[] s = lastLogin.split(":");
+            Long lit = Long.parseLong(s[s.length - 1]);
+
+            String[] a = lastLogout.split(":");
+            Long lot = Long.parseLong(a[a.length - 1]);
+
+            if (lit > lot) ts = lit - lot;
+            else ts = System.currentTimeMillis() / 1000L - lot;
+
+            double newAmount = funds * Math.pow(Math.E, ts / 31557600D * ((userType == UserType.NORMAL) ? (0.06) : (0.12)));
+            newAmount = newAmount*100/100.0 - funds;
+            funds += newAmount;
+            rewriteFunds(newAmount, TransactionType.INTEREST, username);
+        }
+    }
+
     public double withdrawFunds(double withdraw) {
         funds -= withdraw;
-        rewriteFunds(withdraw, 1, username);
+        rewriteFunds(withdraw, TransactionType.WITHDRAWAL, username);
 
         return withdraw;
     }
@@ -219,7 +268,7 @@ public class User {
         File f = new File("data" + File.separator + user + File.separator + "transactions.txt");
         if(f.exists()) {
             funds -= transfer;
-            rewriteFunds(transfer, 2, user);
+            rewriteFunds(transfer, TransactionType.TRANSFER, user);
             System.out.println("$" + String.format("%.2f", transfer) + " has been transferred to user " + user + "! Your total is now $" + String.format("%.2f", funds));
         } else {
             System.out.println("Transfer failed, user does not exist!");

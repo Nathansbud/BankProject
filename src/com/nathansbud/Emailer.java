@@ -12,7 +12,6 @@ import javax.mail.Message;
 import javax.mail.Transport;
 import javax.mail.Session;
 
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
@@ -115,11 +114,9 @@ public class Emailer {
 
         if (email == null) return false;
         return pat.matcher(email).matches();
-    } //Stolen from https://www.geeksforgeeks.org/check-email-address-valid-not-java/
+    } // https://www.geeksforgeeks.org/check-email-address-valid-not-java/
     public static boolean exists(String email) {
-
-        boolean c =  getAllEmails().contains(email);
-        return c;
+        return getAllEmails().contains(email);
     }
 
     public static ArrayList<String> getAllEmails() {

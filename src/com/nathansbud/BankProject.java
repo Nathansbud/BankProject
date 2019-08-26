@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Date;
 
 import static com.nathansbud.BConstants.*;
 
@@ -737,8 +736,14 @@ public class BankProject {
                                 ct += change;
                                 received = true;
                                 break;
+                            case 'I':
+                                System.out.print("Interest of $");
+                                ct += change;
+                                break;
                         }
-                        System.out.print(String.format("%.2f", change));
+
+                        System.out.print((s[i].charAt(0) != 'I') ? (String.format("%.2f", change)) : (change));
+
                         if (transferred) {
                             System.out.print(" to " + s[i].substring(s[i].lastIndexOf(":") + 1));
                         } else if (received) {
