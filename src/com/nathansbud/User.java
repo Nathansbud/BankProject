@@ -8,6 +8,8 @@ import java.io.BufferedWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import static com.nathansbud.BConstants.*;
@@ -208,6 +210,7 @@ public class User {
      * If a login occurs, interest is also granted via {@link User#depositInterest()}.
      * @param login Boolean to log whether operation is a login or logout operation
      */
+
     public void recordLogin(boolean login) {
         try {
             BufferedWriter b = new BufferedWriter(new FileWriter(new File( "data" + File.separator + username + File.separator + "transactions.txt"), true));
@@ -283,8 +286,9 @@ public class User {
             File re = new File(tempPath);
             File old = new File(selfPath);
 
-            re.renameTo(old); //Todo: Figure out how to handle this bool?
-
+            old.delete();
+            Files.move(Paths.get(re.getAbsolutePath()), Paths.get(re.getAbsolutePath().substring(0, re.getAbsolutePath().lastIndexOf("."))+".txt"));
+//            re.renameTo(old); //Todo: Figure out how to handle this bool?
             if(type == TransactionType.TRANSFER) {
                 rewriteFunds(amount, TransactionType.RECEIVE, send); //This is good recursion, yes? Maybe?
             }
@@ -308,6 +312,7 @@ public class User {
      * Checks history by indexing backwards through ArrayList from {@link User#getHistory()} to find last log-in and logout.
      * Uses compound interest formula (P(e)^rt) by finding the time difference between the two, and using user's interest rate (6% for normal user, 12% for premium), then updates funds
      */
+    //Start Author: Shaunak
     public void depositInterest() {
         String[] history = getHistory();
         long ts = 0;
@@ -337,7 +342,7 @@ public class User {
             rewriteFunds(newAmount, TransactionType.INTEREST, username);
         }
     }
-
+    //End Author: Prithvi
     /**
      * Withdraws an amount of funds from the user's current amount balance, {@link com.nathansbud.User#funds}
      * @param withdraw Amount of funds to withdraw

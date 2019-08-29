@@ -495,7 +495,7 @@ public class BankProject {
 
         //Used to make sure that user correctly records logout when program terminates
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
-            if(u.getUsername() != null) {
+            if(u != null && u.getUsername() != null) {
                 u.recordLogin(false);
             }
         }));
@@ -944,6 +944,7 @@ public class BankProject {
                         case "8": //Log-Out
                             System.out.println("Logging out!");
                             u.recordLogin(false);
+                            u = null;
                             menuState = Screen.START; //State Change: Homepage -> Start
                             break;
                     }
