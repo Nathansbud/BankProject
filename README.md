@@ -6,3 +6,9 @@ Nathansbank is an in-development banking program as an IB Computer Science proje
 
 - json-simple (Maven: com.googlecode.json-simple:json-simple:1.1.1)
 - JavaMail (Maven: com.sun.mail:javax.mail:1.6.2)
+
+## Project Notes
+
+- External documentation can be found in the Documentation folder
+- User manual (authored by Prithvi) can be found linked above
+- Specific sections not authored by Zack can be found tagged between Start & End Author comments

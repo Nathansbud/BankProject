@@ -47,29 +47,33 @@ public class BankProject {
         //STATE SCREENS
 
         QUIT(0),
-        START(1),
-        LOGIN(2),
-        CREATE(3),
-        FORGOT_PASSWORD(4),
 
-        HOMEPAGE(5),
-        DEPOSIT(6),
-        WITHDRAW(7),
-        TRANSFER(8),
-        HISTORY(9),
-        MESSAGES(10),
-        INBOX(11),
-        OUTBOX(12),
-        SETTINGS(15),
-        FEEDBACK(155),
+        START(100),
+        LOGIN(101),
+        CREATE(102),
+        FORGOT_PASSWORD(103),
 
-        TERMINATION(50),
-        MASS_TERMINATION(999),
+        HOMEPAGE(200),
+        DEPOSIT(201),
+        WITHDRAW(202),
+        TRANSFER(203),
+        HISTORY(204),
+
+        SETTINGS(300),
+
+        MESSAGES(400),
+        INBOX(401),
+        OUTBOX(402),
+
+
+        FEEDBACK(500),
+
+        TERMINATION(900),
+        MASS_TERMINATION(901),
         //NON-STATE SCREENS
 
         CHOICE(-10), //Used for Yes/No options in map
         ;
-
         //Methods
 
         private final int code;
@@ -108,13 +112,15 @@ public class BankProject {
         menuLookup.put(Screen.START, new String[]{"Login", "Create Account", "Forgot Password", "Quit"});
         menuLookup.put(Screen.CREATE, new String[]{});
         menuLookup.put(Screen.MESSAGES, new String[]{"Read Messages", "Send Message"});
-        if(userType != User.UserType.ADMIN) {
+        //Start Author: Prithvi
+        if(userType != User.UserType.ADMIN) { //Currently no method to register for an admin account, user.json file must be manually changed
             menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "Leave Feedback", "Log Out"});
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Back to Menu"});
         } else {
             menuLookup.put(Screen.HOMEPAGE, new String[]{"Deposit Funds", "Withdraw Funds", "Transfer Funds", "Show History", "Messages", "Settings", "See Feedback", "Log Out"});
             menuLookup.put(Screen.SETTINGS, new String[]{"Change Password", "Terminate Account", "Terminate All", "Back to Menu"});
         }
+        //End Author: Prithvi
     }
 
     /**
@@ -517,7 +523,7 @@ public class BankProject {
                     input = checkInput(sc.nextLine());
                     break;
                 //Todo: Make separate function
-                case LOGIN: {
+                case LOGIN:
                     boolean loginUserPassed = false;
                     boolean passwordPassed = false;
                     boolean shouldContinue = true;
@@ -593,9 +599,6 @@ public class BankProject {
                         }
                     }
                     break;
-                }
-
-                //Todo: Make separate function
                 case CREATE: {
                     boolean passPassed = false;
 
@@ -737,22 +740,24 @@ public class BankProject {
                                 ct += change;
                                 received = true;
                                 break;
+                            //Start Author: Shaunak
                             case 'I':
                                 System.out.print("Interest of $");
                                 ct += change;
                                 break;
+                            //End Author: Shaunak
                         }
 
                         System.out.print((s[i].charAt(0) != 'I') ? (String.format("%.2f", change)) : (change));
-
                         if (transferred) {
-                            System.out.print(" to " + s[i].substring(s[i].lastIndexOf(":") + 1));
+                            String[] sp = s[i].split(":");
+                            System.out.print(" to " + sp[sp.length - 2]);
                         } else if (received) {
-                            System.out.print(" from " + s[i].substring(s[i].lastIndexOf(":") + 1));
+                            String[] sp = s[i].split(":");
+                            System.out.print(" from " + sp[sp.length - 2]);
                         }
                         System.out.println(" - Balance: " + String.format("%.2f", ct));
                     }
-
                     break;
                 case MESSAGES: //Messages
                     menuPrint(menuState);
@@ -938,9 +943,11 @@ public class BankProject {
                         case "6": //Settings
                             menuState = Screen.SETTINGS; //State Change: Homepage -> Settings
                             break;
+                        //Start Author: Prithvi
                         case "7": //Feedback
                             menuState = Screen.FEEDBACK;
                             break;
+                        //End Author: Prithvi
                         case "8": //Log-Out
                             System.out.println("Logging out!");
                             u.recordLogin(false);

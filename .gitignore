@@ -11,7 +11,8 @@ BankProject.iml
 
 data/*/**/*.txt
 data/*/**/*.json
-documentation/
 
 data/uids.txt
+data/feedback.txt
+
 data/feedback.txt

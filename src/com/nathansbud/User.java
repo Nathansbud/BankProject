@@ -249,9 +249,11 @@ public class User {
             case RECEIVE:
                 actionString = "R:" + amount + ":" + username;
                 break;
+            //Start Author: Prithvi
             case INTEREST:
                 actionString = "I:" + amount;
                 break;
+            //End Author: Prithvi
             default:
                 actionString = "ERROR";
                 break;
@@ -288,7 +290,6 @@ public class User {
 
             old.delete();
             Files.move(Paths.get(re.getAbsolutePath()), Paths.get(re.getAbsolutePath().substring(0, re.getAbsolutePath().lastIndexOf("."))+".txt"));
-//            re.renameTo(old); //Todo: Figure out how to handle this bool?
             if(type == TransactionType.TRANSFER) {
                 rewriteFunds(amount, TransactionType.RECEIVE, send); //This is good recursion, yes? Maybe?
             }
@@ -312,7 +313,7 @@ public class User {
      * Checks history by indexing backwards through ArrayList from {@link User#getHistory()} to find last log-in and logout.
      * Uses compound interest formula (P(e)^rt) by finding the time difference between the two, and using user's interest rate (6% for normal user, 12% for premium), then updates funds
      */
-    //Start Author: Shaunak
+    //Start Author: Shaunak & Prithvi
     public void depositInterest() {
         String[] history = getHistory();
         long ts = 0;
@@ -342,7 +343,7 @@ public class User {
             rewriteFunds(newAmount, TransactionType.INTEREST, username);
         }
     }
-    //End Author: Prithvi
+    //End Author: Shaunak & Prithvi
     /**
      * Withdraws an amount of funds from the user's current amount balance, {@link com.nathansbud.User#funds}
      * @param withdraw Amount of funds to withdraw
