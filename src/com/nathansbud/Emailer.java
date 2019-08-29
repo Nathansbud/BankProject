@@ -44,7 +44,7 @@ public class Emailer {
 
     /**
      * Get valid InternetAddress for each email
-     * 
+     *
      * @param emails List of emails to contact
      * @return Set of email addresses cast to InternetAddress
      */

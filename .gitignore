@@ -9,6 +9,6 @@ BankProject.iml
 
 *.kotlin_module
 
-data/**/*.txt
-data/**/*.json
+data/*/**/*.txt
+data/*/**/*.json
 documentation/

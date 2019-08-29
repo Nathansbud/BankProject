@@ -281,7 +281,7 @@ public class BankProject {
     }
 
     /**
-     * Removes the user directory associated with {@param cu}, as well as associated UID.
+     * Removes the user directory associated with current user, as well as associated UID.
      * Updates {@link com.nathansbud.BankProject#files} after finishing, to reflect removed user
      * @param cu User to remove
      */
@@ -485,7 +485,7 @@ public class BankProject {
 
     /**
      * The main function is used for the bank loop (user account and actions)
-     * @param args
+     * @param args Arguments for main
      */
     public static void main(String[] args) {
         if(emailEnabled) emailer = new Emailer("creds"+File.separator+"email.json");
