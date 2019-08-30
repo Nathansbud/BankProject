@@ -8,8 +8,6 @@ import java.io.BufferedWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import static com.nathansbud.BConstants.*;
@@ -68,11 +66,11 @@ public class User {
      * Get history creates a log of all user transactions (including login/log-outs) to iterate over.
      * @return All entries in the user transactions file
      */
-    public String[] getHistory() {
+    public String[] getHistory(String user) {
         ArrayList<String> history = new ArrayList<>();
 
         try {
-            BufferedReader b = new BufferedReader(new FileReader(userFilepath + File.separator + "transactions.txt"));
+            BufferedReader b = new BufferedReader(new FileReader("data" + File.separator + user + File.separator + "transactions.txt"));
             for (int i = 0; i < HISTORY_LOC; i++) {
                 b.readLine();
             }
@@ -90,6 +88,10 @@ public class User {
             h[i] = history.get(i);
         }
         return h;
+    }
+
+    public String[] getHistory() {
+        return getHistory(username);
     }
 
     /**
@@ -260,41 +262,25 @@ public class User {
         }
 
         actionString += ":" + (System.currentTimeMillis() / 1000L);
+        String transactionPath = "data" + File.separator + user + File.separator + "transactions.txt";
 
-
-        String selfPath = "data" + File.separator + user + File.separator + "transactions.txt";
-        String tempPath = "data" + File.separator + user + File.separator + "transactions.tst";
-
+        String[] history = (type != TransactionType.RECEIVE) ? (getHistory()) : (getHistory(user));
+        double ft = funds;
         try {
-            BufferedReader b = new BufferedReader(new FileReader(selfPath));
-            PrintWriter w = new PrintWriter(new BufferedWriter(new FileWriter(tempPath)));
-
-            String line;
-            int indexer = 0;
-            while ((line = b.readLine()) != null) {
-                if(indexer == BALANCE_LOC && type != TransactionType.RECEIVE) {
-                    w.println(funds);
-                } else if(type == TransactionType.RECEIVE && indexer == BALANCE_LOC) {
-                    w.println(Double.parseDouble(line)+amount);
-                } else {
-                    w.println(line);
-                }
-
-                indexer++;
-            } w.println(actionString);
-
-            b.close();
-            w.close();
-            File re = new File(tempPath);
-            File old = new File(selfPath);
-
-            old.delete();
-            Files.move(Paths.get(re.getAbsolutePath()), Paths.get(re.getAbsolutePath().substring(0, re.getAbsolutePath().lastIndexOf("."))+".txt"));
-            if(type == TransactionType.TRANSFER) {
-                rewriteFunds(amount, TransactionType.RECEIVE, send); //This is good recursion, yes? Maybe?
+            if(type == TransactionType.RECEIVE) {
+                ft = getFunds(user) + amount;
             }
+            PrintWriter w = new PrintWriter(new BufferedWriter(new FileWriter(transactionPath)));
+            w.println(ft);
+            for(String s : history) {
+                w.println(s);
+            } w.println(actionString);
+            w.close();
         } catch(IOException e) {
-            System.out.println("Fund Writing Fail");
+            System.out.println("Funds rewriting failed with action string " + actionString);
+        }
+        if(type == TransactionType.TRANSFER) {
+            rewriteFunds(amount, TransactionType.RECEIVE, send);
         }
     }
 
@@ -307,13 +293,13 @@ public class User {
         rewriteFunds(deposit, TransactionType.DEPOSIT, username);
     }
 
+    //Start Author: Shaunak & Prithvi
     /**
      * Function called on login, used to update user account balance on login with interest rate.
      *
      * Checks history by indexing backwards through ArrayList from {@link User#getHistory()} to find last log-in and logout.
      * Uses compound interest formula (P(e)^rt) by finding the time difference between the two, and using user's interest rate (6% for normal user, 12% for premium), then updates funds
      */
-    //Start Author: Shaunak & Prithvi
     public void depositInterest() {
         String[] history = getHistory();
         long ts = 0;
@@ -381,6 +367,44 @@ public class User {
     }
 
     /**
+     * Static version of getFunds, to be used primarily in transfer situations
+     *
+     * @param user Username of user to get funds from
+     * @return The funds of specified user
+     */
+    public static double getFunds(String user) {
+        if(exists(user)) {
+            try {
+                BufferedReader b = new BufferedReader(new FileReader(new File("data" + File.separator + user + File.separator + "transactions.txt")));
+                String line;
+                int indexer = 0;
+
+                while((line = b.readLine()) != null) {
+                    if(indexer == BALANCE_LOC) {
+                        double ret = Double.parseDouble(line);
+                        b.close();
+                        return ret;
+                    }
+                    indexer++;
+                }
+            } catch(IOException e) {
+                System.out.println("Failed to read funds from specified user file! Returning 0...");
+            }
+            return 0;
+        } else {
+            System.out.println("Specified user does not exist! Returning 0...");
+            return 0;
+        }
+    }
+
+    /**
+     * @param user User to check existence of
+     * @return Whether or not a directory for user exists
+     */
+    public static boolean exists(String user) {
+        return new File("data" + File.separator + user).exists();
+    }
+    /**
      * @param _funds Funds to set
      */
     public void setFunds(double _funds) {
@@ -393,6 +417,7 @@ public class User {
     public String getUserFilepath() {
         return userFilepath;
     }
+
     /**
      * @param _userFilepath Filepath of to set
      */

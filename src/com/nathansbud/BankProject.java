@@ -689,9 +689,17 @@ public class BankProject {
                 case TRANSFER:
                     System.out.println("Who would you like to transfer funds to?");
                     String transferUser = sc.nextLine();
-                    System.out.println("How much would you like to transfer?");
-                    double transferAmount = moneyCheck(sc.nextLine());
-                    u.transferFunds(transferAmount, transferUser);
+                    if(User.exists(transferUser)) {
+                        if(transferUser.equals(u.getUsername())) {
+                            System.out.println("Cannot transfer funds to yourself! Returning to menu...");
+                            break;
+                        }
+                        System.out.println("How much would you like to transfer?");
+                        double transferAmount = moneyCheck(sc.nextLine());
+                        u.transferFunds(transferAmount, transferUser);
+                    } else {
+                        System.out.println("User " + transferUser + " does not exist! Returning to menu...");
+                    }
                     break;
                 case HISTORY:
                     System.out.println("Account History");
@@ -890,8 +898,8 @@ public class BankProject {
 
             }
 
-
-            switch(menuState) { //Todo: Merge this with ^
+            //This switch is used exclusively to handle state changes, to keep most separate from program logic
+            switch(menuState) {
                 default:
                     menuState = Screen.HOMEPAGE; //State Change: Current Screen -> Homepage
                     break;
